@@ -6,11 +6,11 @@ from pstats import SortKey
 import sys
 sys.path.append("SCRIPTS")
 
-import SDTMAIN
+import SDT_MAIN
 
 #SDTMAIN.main("SCRIPTS\PARAMS.xml")
 
-cProfile.run('SDTMAIN.main("SCRIPTS\PARAMS.xml")', 'restats')
+#cProfile.run('SDT_MAIN.main("SCRIPTS\PARAMS.xml")', 'restats')
 
 
 p = pstats.Stats('restats')

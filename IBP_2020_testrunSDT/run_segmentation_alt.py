@@ -4,6 +4,6 @@ import os
 import sys
 sys.path.append("SCRIPTS")
 
-import SDTMAIN
+import SDT_MAIN
 
-SDTMAIN.main("SCRIPTS\PARAMS.xml")
+SDT_MAIN.main("SCRIPTS\PARAMS.xml")
