@@ -32,6 +32,8 @@ from math import ceil
 import numpy as np
 import matplotlib.pyplot as plt
 
+from joblib import Parallel, delayed
+
 
 def preprocess_image(param_xml, filehandler):
 	def set_filter_parameters(param_xml):
@@ -436,7 +438,7 @@ def preprocess_image(param_xml, filehandler):
 		binary = img >= thresh
 		return binary
 
-	def filter_threshold_HPassOtsu(img, ix_slice):
+	def filter_threshold_HPassOtsu(img, ix_slice,a_otsu):
 		thresh = threshold_otsu(img)
 		img[img < thresh] = 0
 
@@ -444,7 +446,7 @@ def preprocess_image(param_xml, filehandler):
 
 		return img
 
-	def filter_collect_Otsu(img, ix_slice):
+	def filter_collect_Otsu(img, ix_slice,a_otsu):
 		thresh = threshold_otsu(img) #returns scalar = otsu-threshold value
 		# img [img<thresh] =  0   #original data stays untouched
 		thresh/=param_xml.get_value('SEED_THR_DIVIDE_FACTOR', ['collect_stats'])
@@ -507,7 +509,7 @@ def preprocess_image(param_xml, filehandler):
 
 	# 	return frangi_img
 
-	def write_excel_vesselness_score(a_stack_processed):
+	def write_excel_vesselness_score(a_stack_processed,a_abs_thresh_slice, a_abs_thresh_slice_seed, a_otsu):
 		d_df = {}  # the dict that will be used to create the dataframe   
 		ls_columns = ["nb_stack",
 						"ix_z",
@@ -726,7 +728,7 @@ def preprocess_image(param_xml, filehandler):
 		skeleton = medial_axis(img, return_distance=False)
 		return skeleton
 
-	def collect_stats(a_stack):
+	def collect_stats(a_stack,a_otsu):
 		#   data needed for reconstruction and absolute thresholding
 
 		a_abs_thresh_slice = np.zeros(a_stack.shape[0])
@@ -767,7 +769,7 @@ def preprocess_image(param_xml, filehandler):
 
 		return a_abs_thresh_slice, a_abs_thresh_slice_seed, a_no_signal_filter
 
-	def filter_reconstruction(img, ix_slice):
+	def filter_reconstruction(img, ix_slice, a_abs_thresh_slice, a_abs_thresh_slice_seed):
 		'''
 		This is the downhill filter.  This reconstruction is variable ! it will only be done for thresholds that fall below the minimum
 		it expects as input the frangi output
@@ -782,7 +784,7 @@ def preprocess_image(param_xml, filehandler):
 
 		return img
 
-	def filter_threshold_absolute(img, ix_slice):
+	def filter_threshold_absolute(img, ix_slice,a_abs_thresh_slice):
 
 		thresh = a_abs_thresh_slice[ix_slice]
 		binary = img >= thresh
@@ -857,7 +859,7 @@ def preprocess_image(param_xml, filehandler):
 		a_membrane = the membrane stack (can include manual
 		"""
 		d_filter_arg['blend_z_membrane']['path_output_folder'] = Path(filehandler.get_root_save_location()) / '002_preprocessing' / 'z_membrane_intermediate_steps_{0}'.format(ix_stack)
-		a_bool_peaks,dflog_append  = detect_z_membrane(a_input=a_stack,
+		a_bool_peaks,dflog_append  = detect_z_membrane(a_input=a_input,
 									a_membrane_mask=np.where(a_membrane_overlay,0,1),
 									a_membrane=a_membrane,
 									a_exterior_mask=a_exterior_mask,
@@ -1003,7 +1005,7 @@ def preprocess_image(param_xml, filehandler):
 	f = len(l_output_f_names)
 	a_4D_processed = np.zeros((f, t, z, y, x),dtype=a_4D.dtype)  # the output of some filters are float, dtype int64 will cause 0.07 to be set to zero for example (coercing)
 	dflog={}
-	for ix_stack, nb_stack in enumerate(l_stack_number):  # STACK LOOP
+	def stack_task(ix_stack, nb_stack):
 		print('*processing stack number ', nb_stack, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
 		ix_output_file = 0
 		filehandler.d_save_info['nb_stack'] = nb_stack
@@ -1058,10 +1060,11 @@ def preprocess_image(param_xml, filehandler):
 					a_stack_temp = filter_scale_constant(a_stack_processed)
 				elif s_current_filter == 'scale_max':
 					a_stack_temp = filter_scale_max(a_stack_processed)
+
 				elif s_current_filter == 'collect_stats':
-					a_abs_thresh_slice, a_abs_thresh_slice_seed, a_no_signal_filter = collect_stats(a_stack_processed)
-					if MAKE_EXCEL_VESSELNESS_SCORE: df_frangi = write_excel_vesselness_score(a_stack_processed)
-					if SAVE_TRESHOLD_PNG: save_threshold_graph(a_abs_thresh_slice)
+					a_abs_thresh_slice, a_abs_thresh_slice_seed, a_no_signal_filter = collect_stats(a_stack_processed,a_otsu)
+					#if MAKE_EXCEL_VESSELNESS_SCORE: df_frangi = write_excel_vesselness_score(a_stack_processed,a_abs_thresh_slice, a_abs_thresh_slice_seed, a_otsu)
+					#if SAVE_TRESHOLD_PNG: save_threshold_graph(a_abs_thresh_slice)
 					a_stack_temp = a_stack_processed
 				elif s_current_filter == 'blend_z_membrane':
 					a_stack_temp = filter_blend_z_membrane(a_input=a_stack,
@@ -1079,9 +1082,12 @@ def preprocess_image(param_xml, filehandler):
 
 			else:
 				def slice_task(ix_slice, a_slice):
+					#print(a_slice.size,  flush=True)
+					#print(isinstance(a_slice, np.memmap),  flush=True)
+
 					if len(slice_range):
 						if ix_slice not in range(slice_range[0], slice_range[1]):
-							print("_", end="");
+							#print("_", end="");
 							return a_slice	
 					try:
 						if s_current_filter == 'otsu':
@@ -1125,9 +1131,9 @@ def preprocess_image(param_xml, filehandler):
 						elif s_current_filter == 'scale':
 							a_slice = filter_scaling(a_slice)
 						elif s_current_filter == 'HPassOtsu':
-							a_slice = filter_threshold_HPassOtsu(a_slice, ix_slice)
+							a_slice = filter_threshold_HPassOtsu(a_slice, ix_slice, a_otsu)
 						elif s_current_filter == 'collect_Otsu':
-							a_slice = filter_collect_Otsu(a_slice, ix_slice)
+							a_slice = filter_collect_Otsu(a_slice, ix_slice, a_otsu)
 						elif s_current_filter == 'thrtriangle':
 							a_slice = filter_threshold_triangle(a_slice)
 						elif s_current_filter == 'flip':
@@ -1135,9 +1141,9 @@ def preprocess_image(param_xml, filehandler):
 						elif s_current_filter == 'asint':
 							a_slice = filter_asint(a_slice)
 						elif s_current_filter == 'thrabs':
-							a_slice = filter_threshold_absolute(a_slice, ix_slice)
+							a_slice = filter_threshold_absolute(a_slice, ix_slice, a_abs_thresh_slice)
 						elif s_current_filter == 'reconstruction':
-							a_slice = filter_reconstruction(a_slice, ix_slice)
+							a_slice = filter_reconstruction(a_slice, ix_slice, a_abs_thresh_slice, a_abs_thresh_slice_seed)
 						elif s_current_filter == 'cornerthr':
 							a_slice = filter_threshold_median_max_corners(a_slice)
 						elif s_current_filter == 'skeletonize':
@@ -1158,15 +1164,21 @@ def preprocess_image(param_xml, filehandler):
 					# apply after 1 slice of 1 stack is processed with 1 filter
 
 					#a_stack_temp[ix_slice] = slice_task(a_slice)  # dtype must match, otherwise implicit coercing
-					print('~', end='', flush=True)
+					#print('~', end='', flush=True)
 
 					return a_slice
 
 
+				#if s_current_filter == 'active_contour':
+				#	a_stack_temp = Parallel(n_jobs=-1, verbose=10, max_nbytes=None, prefer="threads")(delayed(slice_task)(ix_slice,a_slice) for ix_slice, a_slice in enumerate(a_stack_processed))
+				#else:
+				#	for ix_slice, a_slice in enumerate(a_stack_processed):  # in 2D mode : SLICE LOOP
+				#		a_stack_temp[ix_slice] = slice_task(ix_slice,a_slice)  # dtype must match, otherwise implicit coercing
+				
+				#a_stack_temp = [slice_task(ix_slice,a_slice) for ix_slice, a_slice in enumerate(a_stack_processed) ]
 
-				a_stack_temp = [slice_task(ix_slice,a_slice) for ix_slice, a_slice in enumerate(a_stack_processed) ]
-				#for ix_slice, a_slice in enumerate(a_stack_processed):  # in 2D mode : SLICE LOOP
-				#	a_stack_temp[ix_slice] = slice_task(ix_slice,a_slice)  # dtype must match, otherwise implicit coercing
+				for ix_slice, a_slice in enumerate(a_stack_processed):  # in 2D mode : SLICE LOOP
+					a_stack_temp[ix_slice] = slice_task(ix_slice,a_slice)  # dtype must match, otherwise implicit coercing
 
 				#force correct dtype
 				a_stack_temp = np.array(a_stack_temp, dtype=a_stack_dtype)
@@ -1210,6 +1222,12 @@ def preprocess_image(param_xml, filehandler):
 					# apply after 1 stack is fully processed with all filters
 		print(examine(a_stack_processed, output=output_log))
 		# a_4D_processed[ix_stack,...] = a_stack_processed
+
+
+	#Parallel(n_jobs=-1, verbose=10)(delayed(stack_task)(ix_stack, nb_stack) for ix_stack, nb_stack in enumerate(l_stack_number))
+	for ix_stack, nb_stack in enumerate(l_stack_number):  # STACK LOOP
+		stack_task(ix_stack, nb_stack)
+
 
 	# apply after all stacks are fully processed
 	filehandler.d_save_info['nb_stack'] = ''

@@ -33,14 +33,12 @@ d_execution_blocks = {'1':'preprocessing',
                       }
 
 def check_params_and_data():
-    
     return True
 
 
 
 def main(inputXML=None):
     def read_parms():
-           
         l_execution_blocks = param_xml.get_value('l_execution_blocks', ['flowcontrol']) 
         ix_restart = param_xml.get_value('ix_restart', ['flowcontrol']) 
         l_execution_blocks = l_execution_blocks if (not ix_restart or ix_restart==0) else l_execution_blocks[ix_restart:]
