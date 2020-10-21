@@ -509,7 +509,7 @@ def preprocess_image(param_xml, filehandler):
 
 	# 	return frangi_img
 
-	def write_excel_vesselness_score(a_stack_processed,a_abs_thresh_slice, a_abs_thresh_slice_seed, a_otsu):
+	def write_excel_vesselness_score(a_stack_processed,a_abs_thresh_slice, a_abs_thresh_slice_seed, a_otsu, nb_stack):
 		d_df = {}  # the dict that will be used to create the dataframe   
 		ls_columns = ["nb_stack",
 						"ix_z",
@@ -571,8 +571,9 @@ def preprocess_image(param_xml, filehandler):
 		# save the data
 		# filehandler.d_save_info['f_name'] = 'frangi_vesselness_scores'
 		# filehandler.save_data(data=pd.DataFrame(d_df), csv_columns=ls_columns, file_ext='csv', verbose=True)
-		dflog_append =  {'frangi_vesselness_scores':pd.DataFrame(d_df,columns=ls_columns)}
-		append_dflog(dflog_append,axis=0)
+		#TODO uncomment
+		#dflog_append =  {'frangi_vesselness_scores':pd.DataFrame(d_df,columns=ls_columns)}
+		#append_dflog(dflog_append,nb_stack,axis=0)
 
 		return pd.DataFrame(d_df)
 
@@ -852,7 +853,7 @@ def preprocess_image(param_xml, filehandler):
 
 		return img
 
-	def filter_blend_z_membrane(a_input,a_membrane_overlay,a_membrane,a_exterior_mask):
+	def filter_blend_z_membrane(a_input,a_membrane_overlay,a_membrane,a_exterior_mask,ix_stack,nb_stack):
 		"""
 		a_input = the current image stack (raw)
 		a_membrane_overlay= the threshold stack (=the otsu cutoff)
@@ -865,7 +866,8 @@ def preprocess_image(param_xml, filehandler):
 									a_exterior_mask=a_exterior_mask,
 									**d_filter_arg['blend_z_membrane'])
 		a_membrane_blend_z = np.where(a_bool_peaks,3,a_membrane)  # z-membrane gets '3' as a value, just for ease of indentification
-		append_dflog(dflog_append)
+		#TODO uncomment
+		#append_dflog(dflog_append,nb_stack)
 
 		return a_membrane_blend_z
 
@@ -933,7 +935,7 @@ def preprocess_image(param_xml, filehandler):
 
 		return
 
-	def append_dflog(dflog_append,axis=1):
+	def append_dflog(dflog_append,nb_stack,axis=1):
 		
 		for tab_i, df_i in dflog_append.items():
 			if axis==1:
@@ -1006,6 +1008,7 @@ def preprocess_image(param_xml, filehandler):
 	a_4D_processed = np.zeros((f, t, z, y, x),dtype=a_4D.dtype)  # the output of some filters are float, dtype int64 will cause 0.07 to be set to zero for example (coercing)
 	dflog={}
 	def stack_task(ix_stack, nb_stack):
+		a_4D_processed_i = np.zeros((f, z, y, x),dtype=a_4D.dtype)
 		print('*processing stack number ', nb_stack, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
 		ix_output_file = 0
 		filehandler.d_save_info['nb_stack'] = nb_stack
@@ -1015,7 +1018,7 @@ def preprocess_image(param_xml, filehandler):
 
 		for ix_filter, filter_nb in enumerate(lnb_filter_order):  # FILTER LOOP
 			s_current_filter = d_number_filter[filter_nb]
-			print('{2}**starting the {0} filter on stack {1}'.format(s_current_filter, nb_stack, '\n'))
+			print('{2}**starting the {0} filter on stack {1}'.format(s_current_filter, nb_stack, '\n'), flush=True)
 
 			slice_range = d_slice_selector.get(s_current_filter, [])
 
@@ -1045,14 +1048,14 @@ def preprocess_image(param_xml, filehandler):
 					# if s_prev_filter=='collect_Otsu':
 					# a_4D_processed[ix_output_file,ix_stack,...] = a_stack_snapshot
 					# else:
-					a_4D_processed[ix_output_file, ix_stack, ...] = a_stack_processed
+					a_4D_processed_i[ix_output_file, ...] = a_stack_processed
 					ix_output_file += 1
 					a_stack_temp = a_stack_processed
 				elif s_current_filter == 'write_output_no_signal_filtered':
-					a_4D_processed[ix_output_file, ix_stack, ...] = a_stack_processed
+					a_4D_processed_i[ix_output_file, ...] = a_stack_processed
 					if l_output_f_names[ix_output_file] == 'exterior_outline':
-							a_4D_processed[ix_output_file, ix_stack, ...][a_stack_processed!=1] = 0
-					a_4D_processed[ix_output_file, ix_stack, np.where(a_no_signal_filter == 1), ...] = 0
+							a_4D_processed_i[ix_output_file,  ...][a_stack_processed!=1] = 0
+					a_4D_processed_i[ix_output_file,  np.where(a_no_signal_filter == 1), ...] = 0
 					
 					ix_output_file += 1
 					a_stack_temp = a_stack_processed
@@ -1062,15 +1065,17 @@ def preprocess_image(param_xml, filehandler):
 					a_stack_temp = filter_scale_max(a_stack_processed)
 
 				elif s_current_filter == 'collect_stats':
+					#TODO uncomment
 					a_abs_thresh_slice, a_abs_thresh_slice_seed, a_no_signal_filter = collect_stats(a_stack_processed,a_otsu)
-					#if MAKE_EXCEL_VESSELNESS_SCORE: df_frangi = write_excel_vesselness_score(a_stack_processed,a_abs_thresh_slice, a_abs_thresh_slice_seed, a_otsu)
+					#if MAKE_EXCEL_VESSELNESS_SCORE: df_frangi = write_excel_vesselness_score(a_stack_processed,a_abs_thresh_slice, a_abs_thresh_slice_seed, a_otsu, nb_stack)
 					#if SAVE_TRESHOLD_PNG: save_threshold_graph(a_abs_thresh_slice)
 					a_stack_temp = a_stack_processed
 				elif s_current_filter == 'blend_z_membrane':
 					a_stack_temp = filter_blend_z_membrane(a_input=a_stack,
-						a_membrane_overlay=a_4D_processed[l_output_f_names.index('threshold'),ix_stack,...],
-						a_membrane=a_4D_processed[l_output_f_names.index('membranes'),ix_stack,...],
-						a_exterior_mask=a_4D_processed[l_output_f_names.index('exterior_mask'),ix_stack,...])
+						a_membrane_overlay=a_4D_processed_i[l_output_f_names.index('threshold'),...],
+						a_membrane=a_4D_processed_i[l_output_f_names.index('membranes'),...],
+						a_exterior_mask=a_4D_processed_i[l_output_f_names.index('exterior_mask'),...],
+						ix_stack=ix_stack, nb_stack= nb_stack)
 				elif s_current_filter == 'morphological_chan_vese':
 					a_stack_temp = filter_morphological_chan_vese(a_stack_processed)
 				if len(slice_range):
@@ -1193,11 +1198,13 @@ def preprocess_image(param_xml, filehandler):
 			# apply after 1 stack is processed with 1 filter (2D or 3D)
 			print('output>>', a_stack_processed.dtype)
 
-			if EXAMINE_PROCESSED_STACKS:
-				s_name = 'the processed stack after filter {0} during step {1} of stack {2}'.format(s_current_filter,
-																																														str(ix_filter),
-																																														str(ix_stack))
-				examine(a_stack_processed, s_name, output=output_log)
+			#TODO uncomment
+			#if EXAMINE_PROCESSED_STACKS:
+				
+				#s_name = 'the processed stack after filter {0} during step {1} of stack {2}'.format(s_current_filter,
+				#						str(ix_filter),
+				#						str(ix_stack))
+				#examine(a_stack_processed, s_name, output=output_log)
 
 			if COMPARE_2_SLICES_LvsR and s_current_filter not in ['write_output', 'write_output_no_signal_filtered',
 																														'collect_stats']:
@@ -1213,20 +1220,28 @@ def preprocess_image(param_xml, filehandler):
 						filehandler.save_data(fig, file_ext='png', verbose=False)
 				filehandler.reset_save_info()
 
-			if WRITE_EXTRA_TIF:  # if you want to write a tif of a certain stack,this is the place
-				if s_current_filter == 'reconstruction' and nb_stack == 1:
-					filehandler.d_save_info['nb_stack'] = nb_stack;
-					filehandler.d_save_info['f_name'] = 'after_reconstruction'
-					filehandler.save_data(a_stack_processed, file_ext='tif', verbose=True)
+			#TODO uncomment
+			#if WRITE_EXTRA_TIF:  # if you want to write a tif of a certain stack,this is the place
+			#	if s_current_filter == 'reconstruction' and nb_stack == 1:
+			#		filehandler.d_save_info['nb_stack'] = nb_stack;
+			#		filehandler.d_save_info['f_name'] = 'after_reconstruction'
+			#		filehandler.save_data(a_stack_processed, file_ext='tif', verbose=True)
 
-					# apply after 1 stack is fully processed with all filters
-		print(examine(a_stack_processed, output=output_log))
+		# apply after 1 stack is fully processed with all filters
+		#TODO uncomment
+		#print(examine(a_stack_processed, output=output_log))
 		# a_4D_processed[ix_stack,...] = a_stack_processed
+		return a_4D_processed_i
 
+	a_4D_processed_swap = np.zeros((t, f, z, y, x),dtype=a_4D.dtype)
+	
 
-	#Parallel(n_jobs=-1, verbose=10)(delayed(stack_task)(ix_stack, nb_stack) for ix_stack, nb_stack in enumerate(l_stack_number))
-	for ix_stack, nb_stack in enumerate(l_stack_number):  # STACK LOOP
-		stack_task(ix_stack, nb_stack)
+	a_4D_processed_swap = Parallel(n_jobs=4, verbose=10)(delayed(stack_task)(ix_stack, nb_stack) for ix_stack, nb_stack in enumerate(l_stack_number))
+	a_4D_processed_swap = np.array(a_4D_processed_swap, dtype=a_4D.dtype)
+	#for ix_stack, nb_stack in enumerate(l_stack_number):  # STACK LOOP
+	#	a_4D_processed_swap[ix_stack, ...] = stack_task(ix_stack, nb_stack)
+
+	a_4D_processed = np.swapaxes(a_4D_processed_swap, 0,1)
 
 
 	# apply after all stacks are fully processed
