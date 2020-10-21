@@ -13,3 +13,4 @@ import os
 SCRIPT_FOLDER = ".\SCRIPTS"
 #os.system("cd")
 os.system("python " + SCRIPT_FOLDER + "\SDT_MAIN.py " + SCRIPT_FOLDER + "\PARAMS.xml")
+#os.system("python " + SCRIPT_FOLDER + "\SDT_MAIN.py") #run with no args, should use default params

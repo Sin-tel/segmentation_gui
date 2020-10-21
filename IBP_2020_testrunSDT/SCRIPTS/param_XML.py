@@ -219,21 +219,22 @@ class Param_xml():
         return
         
     @staticmethod
-    def get_param_xml(sys_argv, l_main_keys=[],verbose=False):
+    def get_param_xml(sys_argv = None, l_main_keys=[],verbose=False):
         '''
         in order of priority
         1) if a Param_xml object is passed as the FIRST argument use this
         2) if a path is passed as the FIRST argument use this to create a new Param_xml object
         3) if no arguments are given, load the PARAM.xml file in the current working directory
         '''
-        if len(sys_argv)>1:
-            if isinstance(sys_argv[1],Param_xml): 
-                param_xml = sys_argv[1]
-            else:    
-                param_xml = Param_xml(file=sys_argv[1],l_main_keys=l_main_keys)
-        else:
+
+        if sys_argv == None:
             file_name='PARAMS.xml'
             param_xml = Param_xml(file=os.path.join(os.getcwd(),file_name),l_main_keys=l_main_keys)
+        else:
+            if isinstance(sys_argv,Param_xml): 
+                param_xml = sys_argv
+            else:    
+                param_xml = Param_xml(file=sys_argv,l_main_keys=l_main_keys)
         
         if verbose:print('param_xml_object from location {0} is used'.format(param_xml.file))      
         return param_xml       

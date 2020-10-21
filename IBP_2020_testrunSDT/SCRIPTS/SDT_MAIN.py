@@ -37,9 +37,8 @@ def check_params_and_data():
     return True
 
 
-if __name__ == '__main__':
-    
-    
+
+def main(inputXML=None):
     def read_parms():
            
         l_execution_blocks = param_xml.get_value('l_execution_blocks', ['flowcontrol']) 
@@ -98,7 +97,7 @@ if __name__ == '__main__':
 
     print('STEP0-SETUP------------------------------------------------------------------------------------------------------------')
                 
-    param_xml = Param_xml.get_param_xml(sys.argv,l_main_keys = ['body','MAIN'],verbose=True)
+    param_xml = Param_xml.get_param_xml(inputXML,l_main_keys = ['body','MAIN'],verbose=True)
     # file_param, param_xml,param_xml.l_main_keys = read_param_xml_file()
     l_execution_blocks,IMG_RAW_DIR,IMG_RAW_FILE,OUTPUT_FOLDER_ROOT,ic_timestamp_subfolder,img_exterior_outline = read_parms()
     
@@ -150,3 +149,8 @@ if __name__ == '__main__':
     
     # if os.popen('hostname').read().startswith('DESKTOP'):ipdb.pm()
     
+if __name__ == '__main__':
+    if len(sys.argv)>1:
+        main(sys.argv[1])
+    else:
+        main()
