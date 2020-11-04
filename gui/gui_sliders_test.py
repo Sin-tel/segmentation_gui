@@ -73,21 +73,25 @@ def frame_seg(frame):
 
 
 def run_preprocessing():
-    with open("PARAMS.xml","r+") as prm:
+    with open("PARAMS.xml","r") as prm:
         data = xmltodict.parse(prm.read())
         data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["SEED_THR_DIVIDE_FACTOR"]["@value"] = str(seedThreshold.get())
         data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["MEMBRANE_ACCEPTANCE_LEVEL"]["@value"] = str(acceptanceLevel.get())
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "1"
+    with open("PARAMS.xml",'w') as prm:
+        prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
     os.system("python " + SCRIPT_FOLDER + "/SDT_MAIN.py " + SCRIPT_FOLDER + "/PARAMS.xml")
 
-def run_segmentation(minCellRadiu,minSphereRadius,fragmentationLevel):
-    with open("PARAMS.xml","r+") as prm:
+def run_segmentation():
+    with open("PARAMS.xml","r") as prm:
         data = xmltodict.parse(prm.read())
         data["body"]["spheresDT"]["parms"]["MIN_CELL_RADIUS"]["@value"] = str(minCellRadiu.get())
         data["body"]["spheresDT"]["parms"]["MIN_SPHERE_RADIUS"]["@value"] = str(minSphereRadius.get())
         data["body"]["spheresDT"]["parms"]["ANTI_CLUSTER_LEVEL"]["@value"] = str(fragmentationLevel.get())
         data["body"]["spheresDT"]["parms"]["MIN_SEED_RADIUS"]["@value"] = str(minSeedRadiu.get())
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "2"
+    with open("PARAMS.xml",'w') as prm:
+        prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
     os.system("python " + SCRIPT_FOLDER + "/SDT_MAIN.py " + SCRIPT_FOLDER + "/PARAMS.xml")
 
 file = io.StringIO()
