@@ -11,6 +11,11 @@ import numpy as np
 import xmltodict
 import math
 import os,io
+from concurrent import futures
+import time
+
+import sys
+
 
 
 
@@ -23,9 +28,15 @@ OUTPUT_DATA_FOLDER = MAIN_FOLDER + "/OUTPUT"
 PREPROCESSING_FOLDER = OUTPUT_DATA_FOLDER +"/002_preprocessing"
 SPHERES_DT_FOLDER = OUTPUT_DATA_FOLDER +"/003_spheresDT"
 
+
+sys.path.append(SCRIPT_FOLDER)
+import SDT_MAIN
+
+
+
 root = Tk()
 
-
+thread_pool_executor = futures.ThreadPoolExecutor(max_workers=1)
 
 # for f_name in os.listdir(INPUT_DATA_FOLDER):
 #     if fnmatch.fnmatch(f_name, '*.tif'):                  #need more clear description of the file names
@@ -45,6 +56,9 @@ preprocessArray = np.zeros((timeDimension, zDimension, yDimension, xDimension))
 segmentationArray = np.zeros((timeDimension, zDimension, 2, yDimension, xDimension))
 #im_tif = Image.open("frangi.tif")
 #nframes = inputImage.n_frames
+
+def run_script(xml):
+    SDT_MAIN.main(xml)
 
 def convert(im,b):
     imarray = np.array(im)
@@ -100,7 +114,6 @@ def z_frame(depth):
 #    update_img(frame_cb(SegmentationImage,frame),segmentationResultPanel)
 
 
-
 def run_preprocessing():
     copyfile(SCRIPT_FOLDER+"/PARAMS.xml", SCRIPT_FOLDER+"/PARAMSCOPY.xml")
     with open(SCRIPT_FOLDER+"/PARAMS.xml","r") as prm:
@@ -110,7 +123,9 @@ def run_preprocessing():
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "1"        
     with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
-    os.system("python " + SCRIPT_FOLDER + "/SDT_MAIN.py " + SCRIPT_FOLDER + "/PARAMS.xml")
+
+    run_script(SCRIPT_FOLDER + "/PARAMS.xml")
+    #os.system("python " + SCRIPT_FOLDER + "/SDT_MAIN.py " + SCRIPT_FOLDER + "/PARAMS.xml")
     global preprocessArray
     preprocessArray = skimage.io.imread(PREPROCESSING_FOLDER+"/membranes.tif") * 255
     preprocessingImage = Image.fromarray(preprocessArray[0,0,:,:])
@@ -133,7 +148,14 @@ def run_segmentation():
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "2"
     with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
-    os.system("python " + SCRIPT_FOLDER + "/SDT_MAIN.py " + SCRIPT_FOLDER + "/PARAMS.xml")
+
+    run_script(SCRIPT_FOLDER + "/PARAMS.xml")
+    #os.system("python " + SCRIPT_FOLDER + "/SDT_MAIN.py " + SCRIPT_FOLDER + "/PARAMS.xml")
+
+    print('Button clicked')
+    thread_pool_executor.submit(self.blocking_code)
+
+
     global segmentationArray
     segmentationArray = skimage.io.imread(SPHERES_DT_FOLDER+"/RGBA_clusterview2.tif")
     segmentationImage =Image.fromarray(segmentationArray[0,0,0,:,:])
