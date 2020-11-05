@@ -41,7 +41,7 @@
 			</ic_timestamp_subfolder>
 		</paths>
 		<flowcontrol>
-			<l_execution_blocks value="2">
+			<l_execution_blocks value="1">
 				<description>list which indicates which blocks will be executed(1=preprocessing,2=spheresDT,3=Lineager_feeder,4=CTC_TRA).
 			If steps are skipped, the locations of the intermediate files should be filled in accordingly</description>
 				<dtype>list;string</dtype>
@@ -253,12 +253,12 @@
 				</structure>
 			</frangi3dmod>
 			<collect_stats>
-				<SEED_THR_DIVIDE_FACTOR value="0.0008">
+				<SEED_THR_DIVIDE_FACTOR value="1.0">
 					<description>the seed threshold determined by automatic thresholding (e.g. Otsu) will be divided by this factor.  Use in case not enough seed signal is picked up</description>
 					<dtype>float</dtype>
 					<default>1.0</default>
 				</SEED_THR_DIVIDE_FACTOR>
-				<MEMBRANE_ACCEPTANCE_LEVEL value="20.0">
+				<MEMBRANE_ACCEPTANCE_LEVEL value="4.0">
 					<description>this will determine the bottom threshold and is used a fraction of the otsu threshold for that slice(Otsu itself will provide the seed threshold).
 				higher values will drive down the bottom treshold.  If set to 1 then seeds will not be extended.  If set lower than 1 threshold will be higher than seed threshold, so seeds will be reduced or even erased</description>
 					<dtype>float</dtype>
@@ -322,19 +322,19 @@
 			</active_contour>
 			<chan_vese>
 				<mu value="default">
-					<description>¡®edge length¡¯ weight parameter. Higher mu values will produce a ¡®round¡¯ edge, while values closer to zero will detect smaller objects.
+					<description>Â‘edge lengthÂ’ weight parameter. Higher mu values will produce a Â‘roundÂ’ edge, while values closer to zero will detect smaller objects.
 				Typical values for mu are between 0 and 1, though higher values can be used when dealing with shapes with very ill-defined contours.</description>
 					<dtype>float</dtype>
 					<default>0.25</default>
 				</mu>
 				<lambda1 value="default">
-					<description>#difference from average¡¯ weight parameter for the output region with value ¡®True¡¯. If it is lower than lambda2, this region will have a larger range of values than the other.
-				Typical values for lambda1 and lambda2 are 1. If the ¡®background¡¯ is very different from the segmented object in terms of distribution (for example, a uniform black image with figures of varying intensity), then these values should be different from each other.</description>
+					<description>#difference from averageÂ’ weight parameter for the output region with value Â‘TrueÂ’. If it is lower than lambda2, this region will have a larger range of values than the other.
+				Typical values for lambda1 and lambda2 are 1. If the Â‘backgroundÂ’ is very different from the segmented object in terms of distribution (for example, a uniform black image with figures of varying intensity), then these values should be different from each other.</description>
 					<dtype>float</dtype>
 					<default>0.0001</default>
 				</lambda1>
 				<lambda2 value="default">
-					<description>difference from average¡¯ weight parameter for the output region with value ¡®False¡¯. If it is lower than lambda1, this region will have a larger range of values than the other.</description>
+					<description>difference from averageÂ’ weight parameter for the output region with value Â‘FalseÂ’. If it is lower than lambda1, this region will have a larger range of values than the other.</description>
 					<dtype>float</dtype>
 					<default>1.0</default>
 				</lambda2>
@@ -349,7 +349,7 @@
 					<default>1e-3</default>
 				</tol>
 				<init_level_set value="default">
-					<description>Defines the starting level set used by the algorithm. If a string is inputted, a level set that matches the image size will automatically be generated. Alternatively, it is possible to define a custom level set, which should be an array of float values, with the same shape as ¡®image¡¯.</description>
+					<description>Defines the starting level set used by the algorithm. If a string is inputted, a level set that matches the image size will automatically be generated. Alternatively, it is possible to define a custom level set, which should be an array of float values, with the same shape as Â‘imageÂ’.</description>
 					<dtype>string</dtype>
 					<default>disk</default>
 				</init_level_set>
@@ -361,13 +361,13 @@
 					<default>1</default>
 				</smoothing>
 				<lambda1 value="default">
-					<description>#difference from average¡¯ weight parameter for the output region with value ¡®True¡¯. If it is lower than lambda2, this region will have a larger range of values than the other.
-				Typical values for lambda1 and lambda2 are 1. If the ¡®background¡¯ is very different from the segmented object in terms of distribution (for example, a uniform black image with figures of varying intensity), then these values should be different from each other.</description>
+					<description>#difference from averageÂ’ weight parameter for the output region with value Â‘TrueÂ’. If it is lower than lambda2, this region will have a larger range of values than the other.
+				Typical values for lambda1 and lambda2 are 1. If the Â‘backgroundÂ’ is very different from the segmented object in terms of distribution (for example, a uniform black image with figures of varying intensity), then these values should be different from each other.</description>
 					<dtype>float</dtype>
 					<default>1</default>
 				</lambda1>
 				<lambda2 value="default">
-					<description>difference from average¡¯ weight parameter for the output region with value ¡®False¡¯. If it is lower than lambda1, this region will have a larger range of values than the other.</description>
+					<description>difference from averageÂ’ weight parameter for the output region with value Â‘FalseÂ’. If it is lower than lambda1, this region will have a larger range of values than the other.</description>
 					<dtype>float</dtype>
 					<default>1000</default>
 				</lambda2>
@@ -377,7 +377,7 @@
 					<default>100</default>
 				</iterations>
 				<init_level_set value="default">
-					<description>Defines the starting level set used by the algorithm. Accepted values are ¡®checkerboard¡¯ and ¡®circle¡¯.</description>
+					<description>Defines the starting level set used by the algorithm. Accepted values are Â‘checkerboardÂ’ and Â‘circleÂ’.</description>
 					<dtype>string</dtype>
 					<default>circle</default>
 				</init_level_set>
@@ -534,7 +534,7 @@
 					<description>If the seed sphere of a cluster overlaps too much with the mask it can not turn into a cell (uses THRESHOLD_CELL_OVERLAP_MASK_PC).  If there are a lot of gaps between the embryo cells and the exterior (embryo does not fill up the shell) you may want to turn this on too avoid false positive cells from forming in these empty spaces</description>
 				</THRESHOLD_CELL_OVERLAP_TOO_MUCH_WITH_MASK>
 			</ALGO_SWITCHES>
-			<ANTI_CLUSTER_LEVEL value="39.0">
+			<ANTI_CLUSTER_LEVEL value="0.8">
 				<description>This influences the overlap threshold used in cluster and cell creation.  Increasing it, will increase the overlap required for 2 spheres or clusters to group together, and therefore boosting cell division.  
 			The value lies between 0 and 1.  It reflects a percentage of the radius of the sphere (the seed sphere in case of cluster) involved.
 			#0 = every overlap will cause clusters to be fused, 
@@ -559,17 +559,17 @@
 				<dtype>float</dtype>
 				<default>0.4</default>
 			</FILTER_SPHERE_OVERLAP_MASK_PC>
-			<MIN_SPHERE_RADIUS value="20.0">
+			<MIN_SPHERE_RADIUS value="default">
 				<description>threshold for sphere creation. The lower, the higher the resolution and computation time</description>
 				<dtype>int</dtype>
 				<default>10</default>
 			</MIN_SPHERE_RADIUS>
-			<MIN_SEED_RADIUS value="39.0">
+			<MIN_SEED_RADIUS value="default">
 				<description>threshold for cluster creation.  A sphere with a radius smaller than this can not be the seed of a cluster, unless it does not overlap with any other sphere</description>
 				<dtype>int</dtype>
 				<default>14</default>
 			</MIN_SEED_RADIUS>
-			<MIN_CELL_RADIUS value="0.0008">
+			<MIN_CELL_RADIUS value="30">
 				<description>threshold for cell creation (used in first stack and cell division).  This is defined as the radius the volume of a sphere that can harbor all pixels of the clusters</description>
 				<dtype>int</dtype>
 				<default>14</default>
