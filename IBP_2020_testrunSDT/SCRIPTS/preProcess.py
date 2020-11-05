@@ -34,6 +34,7 @@ import matplotlib.pyplot as plt
 
 from joblib import Parallel, delayed
 
+USE_PARALLEL = True
 
 def preprocess_image(param_xml, filehandler):
 	def set_filter_parameters(param_xml):
@@ -1234,12 +1235,13 @@ def preprocess_image(param_xml, filehandler):
 		return a_4D_processed_i
 
 	a_4D_processed_swap = np.zeros((t, f, z, y, x),dtype=a_4D.dtype)
-	
 
-	a_4D_processed_swap = Parallel(n_jobs=4, verbose=10)(delayed(stack_task)(ix_stack, nb_stack) for ix_stack, nb_stack in enumerate(l_stack_number))
-	a_4D_processed_swap = np.array(a_4D_processed_swap, dtype=a_4D.dtype)
-	#for ix_stack, nb_stack in enumerate(l_stack_number):  # STACK LOOP
-	#	a_4D_processed_swap[ix_stack, ...] = stack_task(ix_stack, nb_stack)
+	if USE_PARALLEL:
+		a_4D_processed_swap = Parallel(n_jobs=4, verbose=10)(delayed(stack_task)(ix_stack, nb_stack) for ix_stack, nb_stack in enumerate(l_stack_number))
+		a_4D_processed_swap = np.array(a_4D_processed_swap, dtype=a_4D.dtype)
+	else:
+		for ix_stack, nb_stack in enumerate(l_stack_number):  # STACK LOOP
+			a_4D_processed_swap[ix_stack, ...] = stack_task(ix_stack, nb_stack)
 
 	a_4D_processed = np.swapaxes(a_4D_processed_swap, 0,1)
 
@@ -1252,7 +1254,8 @@ def preprocess_image(param_xml, filehandler):
 
 			# log and summary to file and screen
 	write_debug_log(output_log)
-	write_dflog(dflog)
+	#TODO uncomment
+	#write_dflog(dflog)
 
 	for nb_filter in lnb_filter_order:
 		if d_number_filter[nb_filter] == 'subtract':
