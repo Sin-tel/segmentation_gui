@@ -1,5 +1,3 @@
-# https://python-forum.io/Thread-Tkinter-How-to-deal-with-code-that-blocks-the-mainloop-freezing-the-gui
-
 
 from tkinter import *
 from tkinter.filedialog import askdirectory
@@ -32,8 +30,6 @@ SPHERES_DT_FOLDER = OUTPUT_DATA_FOLDER +"/003_spheresDT"
 sys.path.append(SCRIPT_FOLDER)
 import SDT_MAIN
 
-
-
 root = Tk()
 
 thread_pool_executor = futures.ThreadPoolExecutor(max_workers=1)
@@ -57,8 +53,10 @@ segmentationArray = np.zeros((timeDimension, zDimension, 2, yDimension, xDimensi
 #im_tif = Image.open("frangi.tif")
 #nframes = inputImage.n_frames
 
-def run_script(xml):
-    SDT_MAIN.main(xml)
+def set_label_text(button, text):
+        button['text'] = text
+
+
 
 def convert(im,b):
     imarray = np.array(im)
@@ -114,6 +112,25 @@ def z_frame(depth):
 #    update_img(frame_cb(SegmentationImage,frame),segmentationResultPanel)
 
 
+def run_preprocessing_blocking():
+    root.after(0, set_label_text, runPreButton,'running...')
+
+    # print("fake run...")
+    # for number in range(5):
+    #     #self.after(0, self.listbox_insert, number)
+    #     print(number)
+    #     time.sleep(1)
+    SDT_MAIN.main(SCRIPT_FOLDER + "/PARAMS.xml")
+
+    root.after(0, set_label_text, runPreButton,'run')
+
+    global preprocessArray
+    preprocessArray = skimage.io.imread(PREPROCESSING_FOLDER+"/membranes.tif") * 255
+    preprocessingImage = Image.fromarray(preprocessArray[0,0,:,:])
+    update_img(preprocessingImage, preprocessingImagePanel)
+    copyfile(SCRIPT_FOLDER+"/PARAMSCOPY.xml", SCRIPT_FOLDER+"/PARAMS.xml")
+    os.remove(SCRIPT_FOLDER+"/PARAMSCOPY.xml")
+
 def run_preprocessing():
     copyfile(SCRIPT_FOLDER+"/PARAMS.xml", SCRIPT_FOLDER+"/PARAMSCOPY.xml")
     with open(SCRIPT_FOLDER+"/PARAMS.xml","r") as prm:
@@ -124,16 +141,28 @@ def run_preprocessing():
     with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
 
-    run_script(SCRIPT_FOLDER + "/PARAMS.xml")
-    #os.system("python " + SCRIPT_FOLDER + "/SDT_MAIN.py " + SCRIPT_FOLDER + "/PARAMS.xml")
-    global preprocessArray
-    preprocessArray = skimage.io.imread(PREPROCESSING_FOLDER+"/membranes.tif") * 255
-    preprocessingImage = Image.fromarray(preprocessArray[0,0,:,:])
-    update_img(preprocessingImage, preprocessingImagePanel)
-    copyfile(SCRIPT_FOLDER+"/PARAMSCOPY.xml", SCRIPT_FOLDER+"/PARAMS.xml")
+    
+    thread_pool_executor.submit(run_preprocessing_blocking)
+
+    
+
+def run_segmentation_blocking():
+    root.after(0, set_label_text, runSegButton,'running...')
+
+    # print("fake run...")
+    # for number in range(5):
+    #     print(number)
+    #     time.sleep(1)
+    SDT_MAIN.main(SCRIPT_FOLDER + "/PARAMS.xml")
+
+    root.after(0, set_label_text, runSegButton,'run')
+
+    global segmentationArray
+    segmentationArray = skimage.io.imread(SPHERES_DT_FOLDER+"/RGBA_clusterview2.tif")
+    segmentationImage =Image.fromarray(segmentationArray[0,0,0,:,:])
+    update_img(segmentationImage, segmentationResultPanel)
+    copyfile(SCRIPT_FOLDER+"/PARAMSCOPY.xml",SCRIPT_FOLDER+"/PARAMS.xml")
     os.remove(SCRIPT_FOLDER+"/PARAMSCOPY.xml")
-
-
 
 def run_segmentation():
     copyfile(SCRIPT_FOLDER+"/PARAMS.xml", SCRIPT_FOLDER+"/PARAMSCOPY.xml")
@@ -149,19 +178,10 @@ def run_segmentation():
     with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
 
-    run_script(SCRIPT_FOLDER + "/PARAMS.xml")
-    #os.system("python " + SCRIPT_FOLDER + "/SDT_MAIN.py " + SCRIPT_FOLDER + "/PARAMS.xml")
-
-    print('Button clicked')
-    thread_pool_executor.submit(self.blocking_code)
+    thread_pool_executor.submit(run_segmentation_blocking)
 
 
-    global segmentationArray
-    segmentationArray = skimage.io.imread(SPHERES_DT_FOLDER+"/RGBA_clusterview2.tif")
-    segmentationImage =Image.fromarray(segmentationArray[0,0,0,:,:])
-    update_img(segmentationImage, segmentationResultPanel)
-    copyfile(SCRIPT_FOLDER+"/PARAMSCOPY.xml",SCRIPT_FOLDER+"/PARAMS.xml")
-    os.remove(SCRIPT_FOLDER+"/PARAMSCOPY.xml")
+    
  
 
 file = io.StringIO()
@@ -215,8 +235,8 @@ acceptanceLevelE.grid(column=1, row=1)
 
 preprocessingParameters.grid(column=1, row=2)
 
-runButton = Button(root, text = "run", command = lambda:run_preprocessing())
-runButton.grid(column=1, row=3)
+runPreButton = Button(root, text = "run", command = run_preprocessing)
+runPreButton.grid(column=1, row=3)
 
 #Segmentation result part
 
@@ -250,7 +270,7 @@ fragmentationLevel = DoubleVar(value = 0.80)
 fragmentationLevelE = Entry(SegmentationParameters,textvariable = fragmentationLevel, width=10)
 fragmentationLevelE.grid(column=1, row=2)
 
-minSeedRadiuL = Label(SegmentationParameters, text = "Minimum seed radiu")
+minSeedRadiuL = Label(SegmentationParameters, text = "Minimum seed radius")
 minSeedRadiuL.grid(column=0, row=3)
 minSeedRadiu = DoubleVar(value = 14)
 minSeedRadiusE = Entry(SegmentationParameters,textvariable = minSeedRadiu, width=10)
@@ -273,8 +293,8 @@ resolutionFrame.grid(column=1, row=4)
 
 SegmentationParameters.grid(column=2, row=2)
 
-runButton = Button(root, text = "run", command = lambda: run_segmentation())
-runButton.grid(column=2, row=3)
+runSegButton = Button(root, text = "run", command = run_segmentation)
+runSegButton.grid(column=2, row=3)
 
 
 root.title("SpheresDT-GUI")

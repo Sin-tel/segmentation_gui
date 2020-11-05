@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 
 from joblib import Parallel, delayed
 
-USE_PARALLEL = False
+USE_PARALLEL = True
 
 def preprocess_image(param_xml, filehandler):
 	def set_filter_parameters(param_xml):
@@ -692,9 +692,9 @@ def preprocess_image(param_xml, filehandler):
 		current_filter = d_number_filter.get(lnb_filter_order[current_filter_ix], 'no filter found')
 		if current_filter in l_3D_filters:
 				current_filter = current_filter + '3D'
-				print('3D MODE :', file=output)
-		print('sl' + str(slice_right_nb), file=output, end="")
-		pprint.pprint(d_filter_arg.get(current_filter, 'no parms'), stream=output)
+				#print('3D MODE :', file=output)
+		#print('sl' + str(slice_right_nb), file=output, end="")
+		#pprint.pprint(d_filter_arg.get(current_filter, 'no parms'), stream=output)
 		ax2.set_title(output.getvalue(), fontsize=4)
 		ax2.imshow(a_good_bad[1])
 
@@ -750,7 +750,7 @@ def preprocess_image(param_xml, filehandler):
 		# no signal detection
 		def slice_has_signal(z_i):
 				if a_abs_thresh_slice_seed[z_i] > param_xml.get_value('NO_SIGNAL_THRESH', ['collect_stats']):
-						print('temp: ix_z{0} has {1} as a_abs_thresh_slice_seed[z_i] for threshold {2}'.format(z_i,a_abs_thresh_slice_seed[z_i],param_xml.get_value('NO_SIGNAL_THRESH', ['collect_stats'])))
+						#print('temp: ix_z{0} has {1} as a_abs_thresh_slice_seed[z_i] for threshold {2}'.format(z_i,a_abs_thresh_slice_seed[z_i],param_xml.get_value('NO_SIGNAL_THRESH', ['collect_stats'])))
 						return True
 				return False
 
@@ -1010,7 +1010,7 @@ def preprocess_image(param_xml, filehandler):
 	dflog={}
 	def stack_task(ix_stack, nb_stack):
 		a_4D_processed_i = np.zeros((f, z, y, x),dtype=a_4D.dtype)
-		print('*processing stack number ', nb_stack, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		#print('*processing stack number ', nb_stack, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
 		ix_output_file = 0
 		filehandler.d_save_info['nb_stack'] = nb_stack
 		a_stack = slice_tif(a_4D, ix_slice_z=None, ix_slice_time=[nb_stack - 1, nb_stack], verbose=True)
@@ -1019,7 +1019,7 @@ def preprocess_image(param_xml, filehandler):
 
 		for ix_filter, filter_nb in enumerate(lnb_filter_order):  # FILTER LOOP
 			s_current_filter = d_number_filter[filter_nb]
-			print('{2}**starting the {0} filter on stack {1}'.format(s_current_filter, nb_stack, '\n'), flush=True)
+			#print('{2}**starting the {0} filter on stack {1}'.format(s_current_filter, nb_stack, '\n'), flush=True)
 
 			slice_range = d_slice_selector.get(s_current_filter, [])
 
@@ -1033,7 +1033,7 @@ def preprocess_image(param_xml, filehandler):
 				a_stack_exterior_outline = slice_tif(a_exterior_outline, ix_slice_z=None, ix_slice_time=[nb_stack - 1, nb_stack], verbose=True)
 
 			if s_current_filter in l_3D_filters:  # in 3D mode
-				print('***working in 3D~')
+				#print('***working in 3D~')
 				if s_current_filter == 'RmSmObj3D':
 					a_stack_temp = filter3D_remove_small_objects(a_stack_processed)
 				elif s_current_filter == 'RmSmHol3D':
@@ -1197,7 +1197,7 @@ def preprocess_image(param_xml, filehandler):
 				s_prev_filter = s_current_filter
 
 			# apply after 1 stack is processed with 1 filter (2D or 3D)
-			print('output>>', a_stack_processed.dtype)
+			#print('output>>', a_stack_processed.dtype)
 
 			#TODO uncomment
 			#if EXAMINE_PROCESSED_STACKS:
@@ -1237,9 +1237,11 @@ def preprocess_image(param_xml, filehandler):
 	a_4D_processed_swap = np.zeros((t, f, z, y, x),dtype=a_4D.dtype)
 
 	if USE_PARALLEL:
+		print("USING PARALLEL")
 		a_4D_processed_swap = Parallel(n_jobs=4, verbose=10)(delayed(stack_task)(ix_stack, nb_stack) for ix_stack, nb_stack in enumerate(l_stack_number))
 		a_4D_processed_swap = np.array(a_4D_processed_swap, dtype=a_4D.dtype)
 	else:
+		print("NOT USING PARALLEL")
 		for ix_stack, nb_stack in enumerate(l_stack_number):  # STACK LOOP
 			a_4D_processed_swap[ix_stack, ...] = stack_task(ix_stack, nb_stack)
 
