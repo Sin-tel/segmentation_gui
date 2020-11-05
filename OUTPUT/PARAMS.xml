@@ -50,7 +50,7 @@
 	</paths>
 	
 	<flowcontrol>
-		<l_execution_blocks value="1">
+		<l_execution_blocks value="1;2">
 			<description>list which indicates which blocks will be executed(1=preprocessing,2=spheresDT,3=Lineager_feeder,4=CTC_TRA).
 			If steps are skipped, the locations of the intermediate files should be filled in accordingly</description>
 			<dtype>list;string</dtype>
