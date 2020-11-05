@@ -5,13 +5,10 @@ from tkinter import *
 from tkinter.filedialog import askdirectory
 from PIL import ImageTk, Image, ImageEnhance
 from matplotlib import cm
-from shutil import copyfile
-import skimage
 import numpy as np
 import xmltodict
 import math
 import os,io
-
 
 
 from contextlib import redirect_stdout
@@ -34,17 +31,11 @@ root = Tk()
 # im_tif = Image.open(INPUT_DATA_FOLDER+"/"+inputImageName)		
 # nframes = im_tif.n_frames
 
-inputArray = skimage.io.imread(INPUT_DATA_FOLDER+"/TL1_1_t1-5.tif")
-timeDimension = inputArray.shape[0]
-zDimension = inputArray.shape[1]
-yDimension = inputArray.shape[2]
-xDimension = inputArray.shape[3]
-inputImage = Image.fromarray(inputArray[0,0,:,:])
-
-preprocessArray = np.zeros((timeDimension, zDimension, yDimension, xDimension))
-segmentationArray = np.zeros((timeDimension, zDimension, 2, yDimension, xDimension))
+inputImage = Image.open(INPUT_DATA_FOLDER+"/TL1_1_t1-5.tif")
+preprocessingImage =Image.open(PREPROCESSING_FOLDER+"/membranes_blend_z.tif")
+SegmentationImage =Image.open(SPHERES_DT_FOLDER+"/RGBA_clusterview2.tif")
 #im_tif = Image.open("frangi.tif")
-#nframes = inputImage.n_frames
+nframes = inputImage.n_frames
 
 def convert(im,b):
     imarray = np.array(im)
@@ -56,90 +47,52 @@ def update_img(newim,imagePanel):
     imagePanel.configure(image=new)
     imagePanel.image = new
 
-#def frame_cb(im,frame):
-#   
-#    print(frame)
-#    im.seek(int(frame))
-#    newim = convert(im,brightness)
-#    return newim 
+def frame_cb(im,frame):
+    
+    print(frame)
+    im.seek(int(frame))
+    newim = convert(im,brightness)
+    return newim 
     
     
 def brightness_cb(b):
     global brightness
+    im = inputImage
     brightness = math.exp(float(b))
-    newim = convert(Image.fromarray(inputArray[int(timeSlider.get()), int(zDimensionSlider.get()),:,:]), brightness)
+    newim = convert(im, brightness)
     update_img(newim,inputImagePanel)
 
-def time_frame(timepoint):
-    global inputImage
-    inputImage = Image.fromarray(inputArray[int(timepoint), int(zDimensionSlider.get()),:,:])
-    inputImage = convert(inputImage, brightness)
-    preprocessingImage = Image.fromarray(preprocessArray[int(timepoint), int(zDimensionSlider.get()),:,:])
-    segmentationImage = Image.fromarray(segmentationArray[int(timepoint), int(zDimensionSlider.get()),0,:,:])
-    update_img(inputImage, inputImagePanel)    
-    update_img(preprocessingImage, preprocessingImagePanel)
-    update_img(segmentationImage, segmentationResultPanel)
+def frame_input(frame):
+    update_img(frame_cb(inputImage,frame),inputImagePanel)
 
-def z_frame(depth):
-    global inputImage
-    inputImage = Image.fromarray(inputArray[int(timeSlider.get()), int(depth),:,:])
-    inputImage = convert(inputImage,brightness)
-    preprocessingImage = Image.fromarray(preprocessArray[int(timeSlider.get()), int(depth),:,:])
-    segmentationImage = Image.fromarray(segmentationArray[int(timeSlider.get()), int(depth),0,:,:])
-    update_img(inputImage, inputImagePanel)    
-    update_img(preprocessingImage, preprocessingImagePanel)
-    update_img(segmentationImage, segmentationResultPanel)
+def frame_pre(frame):
+    update_img(frame_cb(preprocessingImage,frame),preprocessingImagePanel)
 
-#def frame_input(frame):
-#    update_img(frame_cb(inputImage,frame),inputImagePanel)
-
-#def frame_pre(frame):
-#    update_img(frame_cb(Image.fromarray((skimage.io.imread(PREPROCESSING_FOLDER+"/membranes_blend_z.tif")[:,:,0,0]), "1"),frame),preprocessingImagePanel)
-
-#def frame_seg(frame):
-#    update_img(frame_cb(SegmentationImage,frame),segmentationResultPanel)
+def frame_seg(frame):
+    update_img(frame_cb(SegmentationImage,frame),segmentationResultPanel)
 
 
 def run_preprocessing():
-    copyfile(SCRIPT_FOLDER+"/PARAMS.xml", SCRIPT_FOLDER+"/PARAMSCOPY.xml")
-    with open(SCRIPT_FOLDER+"/PARAMS.xml","r") as prm:
+    with open("PARAMS.xml","r") as prm:
         data = xmltodict.parse(prm.read())
-        data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["SEED_THR_DIVIDE_FACTOR"]["@value"] = str(seedThresholdE.get())
-        data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["MEMBRANE_ACCEPTANCE_LEVEL"]["@value"] = str(acceptanceLevelE.get())
-        data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "1"        
-    with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
+        data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["SEED_THR_DIVIDE_FACTOR"]["@value"] = str(seedThreshold.get())
+        data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["MEMBRANE_ACCEPTANCE_LEVEL"]["@value"] = str(acceptanceLevel.get())
+        data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "1"
+    with open("PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
     os.system("python " + SCRIPT_FOLDER + "/SDT_MAIN.py " + SCRIPT_FOLDER + "/PARAMS.xml")
-    global preprocessArray
-    preprocessArray = skimage.io.imread(PREPROCESSING_FOLDER+"/membranes.tif") * 255
-    preprocessingImage = Image.fromarray(preprocessArray[0,0,:,:])
-    update_img(preprocessingImage, preprocessingImagePanel)
-    copyfile(SCRIPT_FOLDER+"/PARAMSCOPY.xml", SCRIPT_FOLDER+"/PARAMS.xml")
-    os.remove(SCRIPT_FOLDER+"/PARAMSCOPY.xml")
-
-
 
 def run_segmentation():
-    copyfile(SCRIPT_FOLDER+"/PARAMS.xml", SCRIPT_FOLDER+"/PARAMSCOPY.xml")
-    with open(SCRIPT_FOLDER+"/PARAMS.xml","r") as prm:
+    with open("PARAMS.xml","r") as prm:
         data = xmltodict.parse(prm.read())
-        data["body"]["spheresDT"]["parms"]["MIN_CELL_RADIUS"]["@value"] = str(minCellRadiusE.get())
-        data["body"]["spheresDT"]["parms"]["MIN_SPHERE_RADIUS"]["@value"] = str(minSphereRadiusE.get())
-        data["body"]["spheresDT"]["parms"]["ANTI_CLUSTER_LEVEL"]["@value"] = str(fragmentationLevelE.get())
-        data["body"]["spheresDT"]["parms"]["MIN_SEED_RADIUS"]["@value"] = str(minSeedRadiusE.get())
-        data["body"]["spheresDT"]["parms"]["dxyz"]["@value"] = (str(resolutionEx.get())+";"+str(resolutionEy.get())+";"
-            +str())
+        data["body"]["spheresDT"]["parms"]["MIN_CELL_RADIUS"]["@value"] = str(minCellRadiu.get())
+        data["body"]["spheresDT"]["parms"]["MIN_SPHERE_RADIUS"]["@value"] = str(minSphereRadius.get())
+        data["body"]["spheresDT"]["parms"]["ANTI_CLUSTER_LEVEL"]["@value"] = str(fragmentationLevel.get())
+        data["body"]["spheresDT"]["parms"]["MIN_SEED_RADIUS"]["@value"] = str(minSeedRadiu.get())
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "2"
-    with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
+    with open("PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
     os.system("python " + SCRIPT_FOLDER + "/SDT_MAIN.py " + SCRIPT_FOLDER + "/PARAMS.xml")
-    global segmentationArray
-    segmentationArray = skimage.io.imread(SPHERES_DT_FOLDER+"/RGBA_clusterview2.tif")
-    segmentationImage =Image.fromarray(segmentationArray[0,0,0,:,:])
-    update_img(segmentationImage, segmentationResultPanel)
-    copyfile(SCRIPT_FOLDER+"/PARAMSCOPY.xml",SCRIPT_FOLDER+"/PARAMS.xml")
-    os.remove(SCRIPT_FOLDER+"/PARAMSCOPY.xml")
- 
 
 file = io.StringIO()
 
@@ -148,110 +101,100 @@ originalImage = ImageTk.PhotoImage(convert(inputImage,brightness))
 inputImagePanel = Label(root, image = originalImage)
 inputImagePanel.grid(column=0, row=0)
 
-originalImageLabel = Label(root, text = "Input Image", width = 60)
+originalImageLabel = Label(root, text = "Input Image")
 originalImageLabel.grid(column=0, row=1)
 
-slidersFrame = Frame()
-timeSlider = Scale(slidersFrame, from_=0, to=timeDimension-1, length = 400,orient=HORIZONTAL, label="Time-resolution",
- command=time_frame)
-timeSlider.grid(column=0, row=0)
-zDimensionSlider = Scale(slidersFrame, from_=0, to=zDimension-1, length = 400,orient=HORIZONTAL, label="Z-resolution",
- command=z_frame)
-zDimensionSlider.grid(column=0, row=1)
-brightnessSlider = Scale(slidersFrame, from_=-4, to=1, resolution = 0.1, length = 400,orient=HORIZONTAL,
-    label="Brightness", command=brightness_cb)
-brightnessSlider.grid(column=0, row=2)
-slidersFrame.grid(column=0, row=2)
+frameSlider = Scale(root, from_=0, to=nframes-1, length = 400,orient=HORIZONTAL, command=frame_input)
+frameSlider.grid(column=0, row=2)
+
+brightnessSlider = Scale(root, from_=-4, to=1, resolution = 0.1, length = 400,orient=HORIZONTAL, command=brightness_cb)
+brightnessSlider.grid(column=0, row=3)
 
 
 
 #preprocessing part
 
-preprocessingImage = Image.fromarray(preprocessArray[0,0,:,:])
-preprocessingImageTK = ImageTk.PhotoImage(preprocessingImage)
-preprocessingImagePanel = Label(root, image = preprocessingImageTK)
+preprocessingImg = ImageTk.PhotoImage(preprocessingImage)
+preprocessingImagePanel = Label(root, image = preprocessingImg)
 preprocessingImagePanel.grid(column=1, row=0)
 
-preprocessingLabel = Label(root, text = "Preprocessing", width = 60)
+preprocessingLabel = Label(root, text = "Preprocessing")
 preprocessingLabel.grid(column=1, row=1)
+
+frameSlider = Scale(root, from_=0, to=nframes-1, length = 400,orient=HORIZONTAL, command=frame_pre)
+frameSlider.grid(column=1, row=2)
 
 preprocessingParameters = Frame();
 seedThresholdL = Label(preprocessingParameters, text = "Seed Threshold")
 seedThresholdL.grid(column=0, row=0)
-seedThreshold = DoubleVar(value = 1.0)
-seedThresholdE = Entry(preprocessingParameters, textvariable = seedThreshold, width=10)
+seedThreshold = DoubleVar(value = 0.00080)
+seedThresholdE = Entry(preprocessingParameters, textvariable = seedThreshold)
 seedThresholdE.grid(column=1, row=0)
 
 
 
 acceptanceLevelL = Label(preprocessingParameters, text = "Membrane Acceptance Level")
 acceptanceLevelL.grid(column=0, row=1)
-acceptanceLevel = DoubleVar(value = 5.5)
-acceptanceLevelE = Entry(preprocessingParameters, textvariable =acceptanceLevel, width=10)
+acceptanceLevel = DoubleVar(value = 20.00)
+acceptanceLevelE = Entry(preprocessingParameters, textvariable =acceptanceLevel)
 acceptanceLevelE.grid(column=1, row=1)
 
-preprocessingParameters.grid(column=1, row=2)
+
+minimum3DsizeL = Label(preprocessingParameters, text = "Minimum 3D Size")
+minimum3DsizeL.grid(column=0, row=2)
+minimum3Dsize = DoubleVar(value = 39.00)
+minimum3DsizeE = Entry(preprocessingParameters, textvariable =minimum3Dsize)
+minimum3DsizeE.grid(column=1, row=2)
+
+preprocessingParameters.grid(column=1, row=3)
 
 runButton = Button(root, text = "run", command = lambda:run_preprocessing())
-runButton.grid(column=1, row=3)
+runButton.grid(column=1, row=4)
 
 #Segmentation result part
 
-segmentationImage =Image.fromarray(segmentationArray[0,0,0,:,:])
-segmentationImageTK = ImageTk.PhotoImage(segmentationImage)
-segmentationResultPanel = Label(root, image=segmentationImageTK)
+segmentationResult = ImageTk.PhotoImage(SegmentationImage)
+segmentationResultPanel = Label(root, image = segmentationResult)
 segmentationResultPanel.grid(column=2, row=0)
 
-SegmentationLabel = Label(root, text = "Segmentation", width = 60)
+SegmentationLabel = Label(root, text = "Segmentation")
 SegmentationLabel.grid(column=2, row=1)
+
+frameSlider = Scale(root, from_=0, to=nframes-1, length = 400,orient=HORIZONTAL, command=frame_seg)
+frameSlider.grid(column=2, row=2)
 
 SegmentationParameters = Frame();
 
 minCellRadiusL = Label(SegmentationParameters, text = "Minimum cell radius")
 minCellRadiusL.grid(column=0, row=0)
-minCellRadiu = DoubleVar(value = 30)
-minCellRadiusE = Entry(SegmentationParameters, textvariable = minCellRadiu, width=10)
+minCellRadiu = DoubleVar(value = 0.00080)
+minCellRadiusE = Entry(SegmentationParameters, textvariable = minCellRadiu)
 minCellRadiusE.grid(column=1, row=0)
 
 
 minSphereRadiusL = Label(SegmentationParameters, text = "Minimum sphere radius")
 minSphereRadiusL.grid(column=0, row=1)
-minSphereRadius = DoubleVar(value = 10)
-minSphereRadiusE = Entry(SegmentationParameters,textvariable = minSphereRadius, width=10)
+minSphereRadius = DoubleVar(value = 20.00)
+minSphereRadiusE = Entry(SegmentationParameters,textvariable = minSphereRadius)
 minSphereRadiusE.grid(column=1, row=1)
 
 
 fragmentationLevelL = Label(SegmentationParameters, text = "Fragmentation Level")
 fragmentationLevelL.grid(column=0, row=2)
-fragmentationLevel = DoubleVar(value = 0.80)
-fragmentationLevelE = Entry(SegmentationParameters,textvariable = fragmentationLevel, width=10)
+fragmentationLevel = DoubleVar(value = 39.00)
+fragmentationLevelE = Entry(SegmentationParameters,textvariable = fragmentationLevel)
 fragmentationLevelE.grid(column=1, row=2)
 
 minSeedRadiuL = Label(SegmentationParameters, text = "Minimum seed radiu")
 minSeedRadiuL.grid(column=0, row=3)
-minSeedRadiu = DoubleVar(value = 14)
-minSeedRadiusE = Entry(SegmentationParameters,textvariable = minSeedRadiu, width=10)
-minSeedRadiusE.grid(column=1, row=3)
+minSeedRadiu = DoubleVar(value = 39.00)
+minSeedRadiuE = Entry(SegmentationParameters,textvariable = minSeedRadiu)
+minSeedRadiuE.grid(column=1, row=3)
 
-resolutionL = Label(SegmentationParameters, text="Resolution(xyz)")
-resolutionL.grid(column=0, row=4)
-
-resolutionFrame = Frame(SegmentationParameters)
-resolutionx = DoubleVar(value = 0.1294751)
-resolutiony = DoubleVar(value = 0.1294751)
-resolutionz = DoubleVar(value = 1)
-resolutionEx = Entry(resolutionFrame, textvariable=resolutionx, width=10)
-resolutionEy = Entry(resolutionFrame, textvariable=resolutiony, width=10)
-resolutionEz = Entry(resolutionFrame, textvariable=resolutionz, width=10)
-resolutionEx.grid(column=1,row=0)
-resolutionEy.grid(column=2,row=0)
-resolutionEz.grid(column=3,row=0)
-resolutionFrame.grid(column=1, row=4)
-
-SegmentationParameters.grid(column=2, row=2)
+SegmentationParameters.grid(column=2, row=3)
 
 runButton = Button(root, text = "run", command = lambda: run_segmentation())
-runButton.grid(column=2, row=3)
+runButton.grid(column=2, row=4)
 
 
 root.title("SpheresDT-GUI")
