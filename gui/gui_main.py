@@ -1,4 +1,3 @@
-
 from tkinter import *
 from tkinter.filedialog import askdirectory
 from PIL import ImageTk, Image, ImageEnhance
@@ -11,11 +10,7 @@ import math
 import os,io
 from concurrent import futures
 import time
-
 import sys
-
-
-
 
 from contextlib import redirect_stdout
 #MAIN_FOLDER = askdirectory()

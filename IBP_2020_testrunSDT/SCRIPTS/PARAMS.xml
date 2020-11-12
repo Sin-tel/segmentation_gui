@@ -322,19 +322,19 @@
 			</active_contour>
 			<chan_vese>
 				<mu value="default">
-					<description>?edge length? weight parameter. Higher mu values will produce a ?round? edge, while values closer to zero will detect smaller objects.
+					<description>'edge length' weight parameter. Higher mu values will produce a 'round' edge, while values closer to zero will detect smaller objects.
 				Typical values for mu are between 0 and 1, though higher values can be used when dealing with shapes with very ill-defined contours.</description>
 					<dtype>float</dtype>
 					<default>0.25</default>
 				</mu>
 				<lambda1 value="default">
-					<description>#difference from average? weight parameter for the output region with value ?True?. If it is lower than lambda2, this region will have a larger range of values than the other.
-				Typical values for lambda1 and lambda2 are 1. If the ?background? is very different from the segmented object in terms of distribution (for example, a uniform black image with figures of varying intensity), then these values should be different from each other.</description>
+					<description>#difference from average weight parameter for the output region with value `True`. If it is lower than lambda2, this region will have a larger range of values than the other.
+				Typical values for lambda1 and lambda2 are 1. If the 'background' is very different from the segmented object in terms of distribution (for example, a uniform black image with figures of varying intensity), then these values should be different from each other.</description>
 					<dtype>float</dtype>
 					<default>0.0001</default>
 				</lambda1>
 				<lambda2 value="default">
-					<description>difference from average? weight parameter for the output region with value ?False?. If it is lower than lambda1, this region will have a larger range of values than the other.</description>
+					<description>difference from average weight parameter for the output region with value `False`. If it is lower than lambda1, this region will have a larger range of values than the other.</description>
 					<dtype>float</dtype>
 					<default>1.0</default>
 				</lambda2>
@@ -349,7 +349,7 @@
 					<default>1e-3</default>
 				</tol>
 				<init_level_set value="default">
-					<description>Defines the starting level set used by the algorithm. If a string is inputted, a level set that matches the image size will automatically be generated. Alternatively, it is possible to define a custom level set, which should be an array of float values, with the same shape as ?image?.</description>
+					<description>Defines the starting level set used by the algorithm. If a string is inputted, a level set that matches the image size will automatically be generated. Alternatively, it is possible to define a custom level set, which should be an array of float values, with the same shape as 'image'.</description>
 					<dtype>string</dtype>
 					<default>disk</default>
 				</init_level_set>
@@ -361,13 +361,13 @@
 					<default>1</default>
 				</smoothing>
 				<lambda1 value="default">
-					<description>#difference from average? weight parameter for the output region with value ?True?. If it is lower than lambda2, this region will have a larger range of values than the other.
-				Typical values for lambda1 and lambda2 are 1. If the ?background? is very different from the segmented object in terms of distribution (for example, a uniform black image with figures of varying intensity), then these values should be different from each other.</description>
+					<description>#difference from average weight parameter for the output region with value `True`. If it is lower than lambda2, this region will have a larger range of values than the other.
+				Typical values for lambda1 and lambda2 are 1. If the 'background' is very different from the segmented object in terms of distribution (for example, a uniform black image with figures of varying intensity), then these values should be different from each other.</description>
 					<dtype>float</dtype>
 					<default>1</default>
 				</lambda1>
 				<lambda2 value="default">
-					<description>difference from average? weight parameter for the output region with value ?False?. If it is lower than lambda1, this region will have a larger range of values than the other.</description>
+					<description>difference from average weight parameter for the output region with value `False`. If it is lower than lambda1, this region will have a larger range of values than the other.</description>
 					<dtype>float</dtype>
 					<default>1000</default>
 				</lambda2>
@@ -377,7 +377,7 @@
 					<default>100</default>
 				</iterations>
 				<init_level_set value="default">
-					<description>Defines the starting level set used by the algorithm. Accepted values are ?checkerboard? and ?circle?.</description>
+					<description>Defines the starting level set used by the algorithm. Accepted values are 'checkerboard' and 'circle'.</description>
 					<dtype>string</dtype>
 					<default>circle</default>
 				</init_level_set>
