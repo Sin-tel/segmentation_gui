@@ -1,0 +1,10 @@
+ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   109778   83.097    0.001   83.910    0.001 ..\Python38\lib\site-packages\scipy\interpolate\fitpack2.py:807(__call__)
+   203716   77.243    0.000  118.015    0.001 {built-in method numpy.core._multiarray_umath.implement_array_function}
+     3429   71.847    0.021   71.847    0.021 SCRIPTS\helper_functions.py:140(<listcomp>)
+     3429   17.042    0.005  110.967    0.032 SCRIPTS\datamodel.py:2097(__init__)
+    30834   15.015    0.000   15.015    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+     3742   13.305    0.004   52.203    0.014 SCRIPTS\datamodel.py:573(get_overlap_info_of_current_sphere_with_cluster)
+    10795   10.846    0.001   10.846    0.001 {method 'argmax' of 'numpy.ndarray' objects}
+     3429   10.636    0.003   93.528    0.027 SCRIPTS\helper_functions.py:115(get_3D_sphere_coordinates)
+      150    9.898    0.066    9.898    0.066 {built-in method scipy.ndimage._nd_image.euclidean_feature_transform}

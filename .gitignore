@@ -1,3 +1,5 @@
-IBP_2020_testrunSDT/output/*
+IBP_2020_testrunSDT/OUTPUT/*
 segmentation.sublime-workspace
 segmentation.sublime-project
+**/pycache
+*.pyc

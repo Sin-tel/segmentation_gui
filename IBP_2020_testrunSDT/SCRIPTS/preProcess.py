@@ -32,6 +32,9 @@ from math import ceil
 import numpy as np
 import matplotlib.pyplot as plt
 
+from joblib import Parallel, delayed
+
+USE_PARALLEL = True
 
 def preprocess_image(param_xml, filehandler):
 	def set_filter_parameters(param_xml):
@@ -436,7 +439,7 @@ def preprocess_image(param_xml, filehandler):
 		binary = img >= thresh
 		return binary
 
-	def filter_threshold_HPassOtsu(img):
+	def filter_threshold_HPassOtsu(img, ix_slice,a_otsu):
 		thresh = threshold_otsu(img)
 		img[img < thresh] = 0
 
@@ -444,7 +447,7 @@ def preprocess_image(param_xml, filehandler):
 
 		return img
 
-	def filter_collect_Otsu(img):
+	def filter_collect_Otsu(img, ix_slice,a_otsu):
 		thresh = threshold_otsu(img) #returns scalar = otsu-threshold value
 		# img [img<thresh] =  0   #original data stays untouched
 		thresh/=param_xml.get_value('SEED_THR_DIVIDE_FACTOR', ['collect_stats'])
@@ -507,7 +510,7 @@ def preprocess_image(param_xml, filehandler):
 
 	# 	return frangi_img
 
-	def write_excel_vesselness_score(a_stack_processed):
+	def write_excel_vesselness_score(a_stack_processed,a_abs_thresh_slice, a_abs_thresh_slice_seed, a_otsu, nb_stack):
 		d_df = {}  # the dict that will be used to create the dataframe   
 		ls_columns = ["nb_stack",
 						"ix_z",
@@ -569,8 +572,9 @@ def preprocess_image(param_xml, filehandler):
 		# save the data
 		# filehandler.d_save_info['f_name'] = 'frangi_vesselness_scores'
 		# filehandler.save_data(data=pd.DataFrame(d_df), csv_columns=ls_columns, file_ext='csv', verbose=True)
-		dflog_append =  {'frangi_vesselness_scores':pd.DataFrame(d_df,columns=ls_columns)}
-		append_dflog(dflog_append,axis=0)
+		#TODO uncomment
+		#dflog_append =  {'frangi_vesselness_scores':pd.DataFrame(d_df,columns=ls_columns)}
+		#append_dflog(dflog_append,nb_stack,axis=0)
 
 		return pd.DataFrame(d_df)
 
@@ -688,9 +692,9 @@ def preprocess_image(param_xml, filehandler):
 		current_filter = d_number_filter.get(lnb_filter_order[current_filter_ix], 'no filter found')
 		if current_filter in l_3D_filters:
 				current_filter = current_filter + '3D'
-				print('3D MODE :', file=output)
-		print('sl' + str(slice_right_nb), file=output, end="")
-		pprint.pprint(d_filter_arg.get(current_filter, 'no parms'), stream=output)
+				#print('3D MODE :', file=output)
+		#print('sl' + str(slice_right_nb), file=output, end="")
+		#pprint.pprint(d_filter_arg.get(current_filter, 'no parms'), stream=output)
 		ax2.set_title(output.getvalue(), fontsize=4)
 		ax2.imshow(a_good_bad[1])
 
@@ -726,7 +730,7 @@ def preprocess_image(param_xml, filehandler):
 		skeleton = medial_axis(img, return_distance=False)
 		return skeleton
 
-	def collect_stats(a_stack):
+	def collect_stats(a_stack,a_otsu):
 		#   data needed for reconstruction and absolute thresholding
 
 		a_abs_thresh_slice = np.zeros(a_stack.shape[0])
@@ -746,7 +750,7 @@ def preprocess_image(param_xml, filehandler):
 		# no signal detection
 		def slice_has_signal(z_i):
 				if a_abs_thresh_slice_seed[z_i] > param_xml.get_value('NO_SIGNAL_THRESH', ['collect_stats']):
-						print('temp: ix_z{0} has {1} as a_abs_thresh_slice_seed[z_i] for threshold {2}'.format(z_i,a_abs_thresh_slice_seed[z_i],param_xml.get_value('NO_SIGNAL_THRESH', ['collect_stats'])))
+						#print('temp: ix_z{0} has {1} as a_abs_thresh_slice_seed[z_i] for threshold {2}'.format(z_i,a_abs_thresh_slice_seed[z_i],param_xml.get_value('NO_SIGNAL_THRESH', ['collect_stats'])))
 						return True
 				return False
 
@@ -767,7 +771,7 @@ def preprocess_image(param_xml, filehandler):
 
 		return a_abs_thresh_slice, a_abs_thresh_slice_seed, a_no_signal_filter
 
-	def filter_reconstruction(img, ix_slice):
+	def filter_reconstruction(img, ix_slice, a_abs_thresh_slice, a_abs_thresh_slice_seed):
 		'''
 		This is the downhill filter.  This reconstruction is variable ! it will only be done for thresholds that fall below the minimum
 		it expects as input the frangi output
@@ -782,7 +786,7 @@ def preprocess_image(param_xml, filehandler):
 
 		return img
 
-	def filter_threshold_absolute(img, ix_slice):
+	def filter_threshold_absolute(img, ix_slice,a_abs_thresh_slice):
 
 		thresh = a_abs_thresh_slice[ix_slice]
 		binary = img >= thresh
@@ -850,20 +854,21 @@ def preprocess_image(param_xml, filehandler):
 
 		return img
 
-	def filter_blend_z_membrane(a_input,a_membrane_overlay,a_membrane,a_exterior_mask):
+	def filter_blend_z_membrane(a_input,a_membrane_overlay,a_membrane,a_exterior_mask,ix_stack,nb_stack):
 		"""
 		a_input = the current image stack (raw)
 		a_membrane_overlay= the threshold stack (=the otsu cutoff)
 		a_membrane = the membrane stack (can include manual
 		"""
 		d_filter_arg['blend_z_membrane']['path_output_folder'] = Path(filehandler.get_root_save_location()) / '002_preprocessing' / 'z_membrane_intermediate_steps_{0}'.format(ix_stack)
-		a_bool_peaks,dflog_append  = detect_z_membrane(a_input=a_stack,
+		a_bool_peaks,dflog_append  = detect_z_membrane(a_input=a_input,
 									a_membrane_mask=np.where(a_membrane_overlay,0,1),
 									a_membrane=a_membrane,
 									a_exterior_mask=a_exterior_mask,
 									**d_filter_arg['blend_z_membrane'])
 		a_membrane_blend_z = np.where(a_bool_peaks,3,a_membrane)  # z-membrane gets '3' as a value, just for ease of indentification
-		append_dflog(dflog_append)
+		#TODO uncomment
+		#append_dflog(dflog_append,nb_stack)
 
 		return a_membrane_blend_z
 
@@ -931,7 +936,7 @@ def preprocess_image(param_xml, filehandler):
 
 		return
 
-	def append_dflog(dflog_append,axis=1):
+	def append_dflog(dflog_append,nb_stack,axis=1):
 		
 		for tab_i, df_i in dflog_append.items():
 			if axis==1:
@@ -977,8 +982,8 @@ def preprocess_image(param_xml, filehandler):
 	# load the data + route save folder
 	a_4D = filehandler.load_tif(storage_name='IMG_RAW_FILE')
 	if len(a_4D.shape) == 3:
-			a_4D = a_4D[np.newaxis, :]
-			print(a_4D.shape, " a dummy dimension was added")
+		a_4D = a_4D[np.newaxis, :]
+		print(a_4D.shape, " a dummy dimension was added")
 			
 	filehandler.extend_save_info(extra_dir_1='002_preprocessing', from_root=True, take_snapshot_after=True)
 	filehandler.d_save_info['nb_stack'] = str(a_left_right_selector[0][0])
@@ -987,14 +992,13 @@ def preprocess_image(param_xml, filehandler):
 	#some preprocessing in advance
 	if 41 in lnb_filter_order: #manually inputted file marking inside-outside border is needed
 		with TiffFile(filehandler.get_f_name('img_exterior_outline')) as tif:
-							a_exterior_outline = tif.asarray()
+			a_exterior_outline = tif.asarray()
 		if len(a_exterior_outline.shape) == 3:
 			a_exterior_outline = a_exterior_outline[np.newaxis, :]
 			print(a_exterior_outline.shape, " a dummy dimension was added to a_exterior_outline")
 			
 	if 34 in lnb_filter_order:
-			init_active_contour,use_deprecated_active_contour = prep_active_contour()
-
+		init_active_contour,use_deprecated_active_contour = prep_active_contour()
 
 
 	if l_stack_number == 'all':
@@ -1004,201 +1008,245 @@ def preprocess_image(param_xml, filehandler):
 	f = len(l_output_f_names)
 	a_4D_processed = np.zeros((f, t, z, y, x),dtype=a_4D.dtype)  # the output of some filters are float, dtype int64 will cause 0.07 to be set to zero for example (coercing)
 	dflog={}
-	for ix_stack, nb_stack in enumerate(l_stack_number):  # STACK LOOP
-			print('*processing stack number ', nb_stack, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
-			ix_output_file = 0
-			filehandler.d_save_info['nb_stack'] = nb_stack
-			a_stack = slice_tif(a_4D, ix_slice_z=None, ix_slice_time=[nb_stack - 1, nb_stack], verbose=True)
-			a_stack_processed = a_stack.copy()
-			a_otsu = np.zeros(a_stack.shape[0])
+	def stack_task(ix_stack, nb_stack):
+		a_4D_processed_i = np.zeros((f, z, y, x),dtype=a_4D.dtype)
+		#print('*processing stack number ', nb_stack, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		ix_output_file = 0
+		filehandler.d_save_info['nb_stack'] = nb_stack
+		a_stack = slice_tif(a_4D, ix_slice_z=None, ix_slice_time=[nb_stack - 1, nb_stack], verbose=True)
+		a_stack_processed = a_stack.copy()
+		a_otsu = np.zeros(a_stack.shape[0])
 
-			for ix_filter, filter_nb in enumerate(lnb_filter_order):  # FILTER LOOP
-					s_current_filter = d_number_filter[filter_nb]
-					print('{2}**starting the {0} filter on stack {1}'.format(s_current_filter, nb_stack, '\n'))
+		for ix_filter, filter_nb in enumerate(lnb_filter_order):  # FILTER LOOP
+			s_current_filter = d_number_filter[filter_nb]
+			#print('{2}**starting the {0} filter on stack {1}'.format(s_current_filter, nb_stack, '\n'), flush=True)
 
-					slice_range = d_slice_selector.get(s_current_filter, [])
+			slice_range = d_slice_selector.get(s_current_filter, [])
 
-					# iterating and updating with different dtype causes coercing, so work with a temp stack
-					a_stack_temp = np.zeros(a_stack_processed.shape,
-																	dtype=d_filter_outputdtype.get(s_current_filter, a_4D.dtype))
+			# iterating and updating with different dtype causes coercing, so work with a temp stack
+			a_stack_dtype = d_filter_outputdtype.get(s_current_filter, a_4D.dtype)
+			a_stack_temp = np.zeros(a_stack_processed.shape, dtype=a_stack_dtype)
 
-					if s_current_filter == 'blend_manual_exterior':
-							a_stack_exterior_outline = slice_tif(a_exterior_outline, ix_slice_z=None, ix_slice_time=[nb_stack - 1, nb_stack], verbose=True)
+			
 
-					if s_current_filter in l_3D_filters:  # in 3D mode
-							print('***working in 3D~')
-							if s_current_filter == 'RmSmObj3D':
-									a_stack_temp = filter3D_remove_small_objects(a_stack_processed)
-							elif s_current_filter == 'RmSmHol3D':
-									a_stack_temp = filter3D_remove_small_holes(a_stack_processed)
-							elif s_current_filter == 'frangi3d':
-									a_stack_temp = filter_frangi3d(a_stack_processed)
-							elif s_current_filter == 'frangi3dmod':
-									#a_stack_temp = filter_frangi3dmod(a_stack_processed)
-									continue #bypassed dependency
-							elif s_current_filter == 'skeletonize3d':
-									a_stack_temp = filter_skeletonize_3d(a_stack_processed)
-							elif s_current_filter == 'write_output':
-									# if s_prev_filter=='collect_Otsu':
-									# a_4D_processed[ix_output_file,ix_stack,...] = a_stack_snapshot
-									# else:
-									a_4D_processed[ix_output_file, ix_stack, ...] = a_stack_processed
-									ix_output_file += 1
-									a_stack_temp = a_stack_processed
-							elif s_current_filter == 'write_output_no_signal_filtered':
-									a_4D_processed[ix_output_file, ix_stack, ...] = a_stack_processed
-									if l_output_f_names[ix_output_file] == 'exterior_outline':
-											a_4D_processed[ix_output_file, ix_stack, ...][a_stack_processed!=1] = 0
-									a_4D_processed[ix_output_file, ix_stack, np.where(a_no_signal_filter == 1), ...] = 0
-									
-									ix_output_file += 1
-									a_stack_temp = a_stack_processed
-							elif s_current_filter == 'scale_constant':
-									a_stack_temp = filter_scale_constant(a_stack_processed)
-							elif s_current_filter == 'scale_max':
-									a_stack_temp = filter_scale_max(a_stack_processed)
-							elif s_current_filter == 'collect_stats':
-									a_abs_thresh_slice, a_abs_thresh_slice_seed, a_no_signal_filter = collect_stats(a_stack_processed)
-									if MAKE_EXCEL_VESSELNESS_SCORE: df_frangi = write_excel_vesselness_score(a_stack_processed)
-									if SAVE_TRESHOLD_PNG: save_threshold_graph(a_abs_thresh_slice)
-									a_stack_temp = a_stack_processed
-							elif s_current_filter == 'blend_z_membrane':
-									a_stack_temp = filter_blend_z_membrane(a_input=a_stack,
-										a_membrane_overlay=a_4D_processed[l_output_f_names.index('threshold'),ix_stack,...],
-										a_membrane=a_4D_processed[l_output_f_names.index('membranes'),ix_stack,...],
-										a_exterior_mask=a_4D_processed[l_output_f_names.index('exterior_mask'),ix_stack,...])
-							elif s_current_filter == 'morphological_chan_vese':
-									a_stack_temp = filter_morphological_chan_vese(a_stack_processed)
-							if len(slice_range):
-									a_stack_processed[slice_range[0]:slice_range[1]] = a_stack_temp[slice_range[0]:slice_range[1]]
-							else:
-									a_stack_processed = a_stack_temp
-							s_prev_filter = s_current_filter
+			if s_current_filter == 'blend_manual_exterior':
+				a_stack_exterior_outline = slice_tif(a_exterior_outline, ix_slice_z=None, ix_slice_time=[nb_stack - 1, nb_stack], verbose=True)
+
+			if s_current_filter in l_3D_filters:  # in 3D mode
+				#print('***working in 3D~')
+				if s_current_filter == 'RmSmObj3D':
+					a_stack_temp = filter3D_remove_small_objects(a_stack_processed)
+				elif s_current_filter == 'RmSmHol3D':
+					a_stack_temp = filter3D_remove_small_holes(a_stack_processed)
+				elif s_current_filter == 'frangi3d':
+					a_stack_temp = filter_frangi3d(a_stack_processed)
+				elif s_current_filter == 'frangi3dmod':
+					#a_stack_temp = filter_frangi3dmod(a_stack_processed)
+					continue #bypassed dependency
+				elif s_current_filter == 'skeletonize3d':
+					a_stack_temp = filter_skeletonize_3d(a_stack_processed)
+				elif s_current_filter == 'write_output':
+					# if s_prev_filter=='collect_Otsu':
+					# a_4D_processed[ix_output_file,ix_stack,...] = a_stack_snapshot
+					# else:
+					a_4D_processed_i[ix_output_file, ...] = a_stack_processed
+					ix_output_file += 1
+					a_stack_temp = a_stack_processed
+				elif s_current_filter == 'write_output_no_signal_filtered':
+					a_4D_processed_i[ix_output_file, ...] = a_stack_processed
+					if l_output_f_names[ix_output_file] == 'exterior_outline':
+							a_4D_processed_i[ix_output_file,  ...][a_stack_processed!=1] = 0
+					a_4D_processed_i[ix_output_file,  np.where(a_no_signal_filter == 1), ...] = 0
+					
+					ix_output_file += 1
+					a_stack_temp = a_stack_processed
+				elif s_current_filter == 'scale_constant':
+					a_stack_temp = filter_scale_constant(a_stack_processed)
+				elif s_current_filter == 'scale_max':
+					a_stack_temp = filter_scale_max(a_stack_processed)
+
+				elif s_current_filter == 'collect_stats':
+					#TODO uncomment
+					a_abs_thresh_slice, a_abs_thresh_slice_seed, a_no_signal_filter = collect_stats(a_stack_processed,a_otsu)
+					#if MAKE_EXCEL_VESSELNESS_SCORE: df_frangi = write_excel_vesselness_score(a_stack_processed,a_abs_thresh_slice, a_abs_thresh_slice_seed, a_otsu, nb_stack)
+					#if SAVE_TRESHOLD_PNG: save_threshold_graph(a_abs_thresh_slice)
+					a_stack_temp = a_stack_processed
+				elif s_current_filter == 'blend_z_membrane':
+					a_stack_temp = filter_blend_z_membrane(a_input=a_stack,
+						a_membrane_overlay=a_4D_processed_i[l_output_f_names.index('threshold'),...],
+						a_membrane=a_4D_processed_i[l_output_f_names.index('membranes'),...],
+						a_exterior_mask=a_4D_processed_i[l_output_f_names.index('exterior_mask'),...],
+						ix_stack=ix_stack, nb_stack= nb_stack)
+				elif s_current_filter == 'morphological_chan_vese':
+					a_stack_temp = filter_morphological_chan_vese(a_stack_processed)
+				if len(slice_range):
+					a_stack_processed[slice_range[0]:slice_range[1]] = a_stack_temp[slice_range[0]:slice_range[1]]
+				else:
+					a_stack_processed = a_stack_temp
+				s_prev_filter = s_current_filter
 
 
-					else:
-							for ix_slice, a_slice in enumerate(a_stack_processed):  # in 2D mode : SLICE LOOP
+			else:
+				def slice_task(ix_slice, a_slice):
+					#print(a_slice.size,  flush=True)
+					#print(isinstance(a_slice, np.memmap),  flush=True)
 
-									if len(slice_range):
-											if ix_slice not in range(slice_range[0], slice_range[1]):
-													a_stack_temp[ix_slice] = a_slice
-													print("_", end="");
-													continue
-									try:
-											if s_current_filter == 'otsu':
-													a_slice = filter_threshold_otsu(a_slice)
-											elif s_current_filter == 'median':
-													a_slice = filter_median(a_slice)
-											elif s_current_filter == 'laplace':
-													a_slice = filter_laplace(a_slice)
-											elif s_current_filter == 'frangi':
-													a_slice = filter_frangi(a_slice)
-											elif s_current_filter == 'RmSmObj':
-													a_slice = filter_remove_small_objects(a_slice)
-											elif s_current_filter == 'RmSmHol':
-													a_slice = filter_remove_small_holes(a_slice)
-											elif s_current_filter == 'thrli':
-													a_slice = filter_threshold_li(a_slice)
-											elif s_current_filter == 'thrloc':
-													a_slice = filter_threshold_local(a_slice)
-											elif s_current_filter == 'thrmin':
-													a_slice = filter_threshold_minimum(a_slice)
-											elif s_current_filter == 'bineros':
-													a_slice = filter_binary_erosion(a_slice)
-											elif s_current_filter == 'bindila':
-													a_slice = filter_binary_dilation(a_slice)
-											elif s_current_filter == 'invert':
-													a_slice = filter_inverse(a_slice)
-											elif s_current_filter == 'resint':
-													a_slice = filter_rescale_intensity(a_slice)
-											elif s_current_filter == 'subtract':
-													d_filter_arg['subtract']['ix_slice'] = ix_slice
-													d_filter_arg['subtract']['ix_stack'] = nb_stack - 1
-													a_slice = filter_subtract_image(a_slice)
-											elif s_current_filter == 'kuwahara':
-													a_slice = filter_kuwahara(a_slice)
-											elif s_current_filter == 'gaussian':
-													a_slice = filter_gaussian(a_slice)
-											elif s_current_filter == 'binclos':
-													a_slice = filter_binary_closing(a_slice)
-											elif s_current_filter == 'binopen':
-													a_slice = filter_binary_opening(a_slice)
-											elif s_current_filter == 'scale':
-													a_slice = filter_scaling(a_slice)
-											elif s_current_filter == 'HPassOtsu':
-													a_slice = filter_threshold_HPassOtsu(a_slice)
-											elif s_current_filter == 'collect_Otsu':
-													a_slice = filter_collect_Otsu(a_slice)
-											elif s_current_filter == 'thrtriangle':
-													a_slice = filter_threshold_triangle(a_slice)
-											elif s_current_filter == 'flip':
-													a_slice = filter_flip(a_slice)
-											elif s_current_filter == 'asint':
-													a_slice = filter_asint(a_slice)
-											elif s_current_filter == 'thrabs':
-													a_slice = filter_threshold_absolute(a_slice, ix_slice)
-											elif s_current_filter == 'reconstruction':
-													a_slice = filter_reconstruction(a_slice, ix_slice)
-											elif s_current_filter == 'cornerthr':
-													a_slice = filter_threshold_median_max_corners(a_slice)
-											elif s_current_filter == 'skeletonize':
-													a_slice = filter_skeletonize(a_slice, ix_slice)
-											elif s_current_filter == 'medial_axis':
-													a_slice = filter_medial_axis(a_slice, ix_slice)
-											elif s_current_filter == 'active_contour':
-													a_active_contour_slice, a_slice = filter_active_contour(a_slice, ix_slice,a_stack[ix_slice])
-											elif s_current_filter == 'chan_vese':
-													_, a_slice = filter_chan_vese(a_slice, ix_slice)
-											elif s_current_filter == 'blend_manual_exterior':
-													a_slice = filter_blend_manual_exterior(a_slice, ix_slice, a_stack_exterior_outline[ix_slice])
-											elif s_current_filter == 'exterior_mask':
-													a_slice = filter_exterior_mask(a_slice, ix_slice)
-									except Exception as e:
-											logging.error(traceback.format_exc())
+					if len(slice_range):
+						if ix_slice not in range(slice_range[0], slice_range[1]):
+							#print("_", end="");
+							return a_slice	
+					try:
+						if s_current_filter == 'otsu':
+							a_slice = filter_threshold_otsu(a_slice)
+						elif s_current_filter == 'median':
+							a_slice = filter_median(a_slice)
+						elif s_current_filter == 'laplace':
+							a_slice = filter_laplace(a_slice)
+						elif s_current_filter == 'frangi':
+							a_slice = filter_frangi(a_slice)
+						elif s_current_filter == 'RmSmObj':
+							a_slice = filter_remove_small_objects(a_slice)
+						elif s_current_filter == 'RmSmHol':
+							a_slice = filter_remove_small_holes(a_slice)
+						elif s_current_filter == 'thrli':
+							a_slice = filter_threshold_li(a_slice)
+						elif s_current_filter == 'thrloc':
+							a_slice = filter_threshold_local(a_slice)
+						elif s_current_filter == 'thrmin':
+							a_slice = filter_threshold_minimum(a_slice)
+						elif s_current_filter == 'bineros':
+							a_slice = filter_binary_erosion(a_slice)
+						elif s_current_filter == 'bindila':
+							a_slice = filter_binary_dilation(a_slice)
+						elif s_current_filter == 'invert':
+							a_slice = filter_inverse(a_slice)
+						elif s_current_filter == 'resint':
+							a_slice = filter_rescale_intensity(a_slice)
+						elif s_current_filter == 'subtract':
+							d_filter_arg['subtract']['ix_slice'] = ix_slice
+							d_filter_arg['subtract']['ix_stack'] = nb_stack - 1
+							a_slice = filter_subtract_image(a_slice)
+						elif s_current_filter == 'kuwahara':
+							a_slice = filter_kuwahara(a_slice)
+						elif s_current_filter == 'gaussian':
+							a_slice = filter_gaussian(a_slice)
+						elif s_current_filter == 'binclos':
+							a_slice = filter_binary_closing(a_slice)
+						elif s_current_filter == 'binopen':
+							a_slice = filter_binary_opening(a_slice)
+						elif s_current_filter == 'scale':
+							a_slice = filter_scaling(a_slice)
+						elif s_current_filter == 'HPassOtsu':
+							a_slice = filter_threshold_HPassOtsu(a_slice, ix_slice, a_otsu)
+						elif s_current_filter == 'collect_Otsu':
+							a_slice = filter_collect_Otsu(a_slice, ix_slice, a_otsu)
+						elif s_current_filter == 'thrtriangle':
+							a_slice = filter_threshold_triangle(a_slice)
+						elif s_current_filter == 'flip':
+							a_slice = filter_flip(a_slice)
+						elif s_current_filter == 'asint':
+							a_slice = filter_asint(a_slice)
+						elif s_current_filter == 'thrabs':
+							a_slice = filter_threshold_absolute(a_slice, ix_slice, a_abs_thresh_slice)
+						elif s_current_filter == 'reconstruction':
+							a_slice = filter_reconstruction(a_slice, ix_slice, a_abs_thresh_slice, a_abs_thresh_slice_seed)
+						elif s_current_filter == 'cornerthr':
+							a_slice = filter_threshold_median_max_corners(a_slice)
+						elif s_current_filter == 'skeletonize':
+							a_slice = filter_skeletonize(a_slice, ix_slice)
+						elif s_current_filter == 'medial_axis':
+							a_slice = filter_medial_axis(a_slice, ix_slice)
+						elif s_current_filter == 'active_contour':
+							a_active_contour_slice, a_slice = filter_active_contour(a_slice, ix_slice,a_stack[ix_slice])
+						elif s_current_filter == 'chan_vese':
+							_, a_slice = filter_chan_vese(a_slice, ix_slice)
+						elif s_current_filter == 'blend_manual_exterior':
+							a_slice = filter_blend_manual_exterior(a_slice, ix_slice, a_stack_exterior_outline[ix_slice])
+						elif s_current_filter == 'exterior_mask':
+							a_slice = filter_exterior_mask(a_slice, ix_slice)
+					except Exception as e:
+							logging.error(traceback.format_exc())
 
-									# apply after 1 slice of 1 stack is processed with 1 filter
-									a_stack_temp[ix_slice] = a_slice  # dtype must match, otherwise implicit coercing
-									print('~', end='', flush=True)
+					# apply after 1 slice of 1 stack is processed with 1 filter
 
-							# apply after all slices of 1 stack is processed with 1 filter (2D)
-							# if s_current_filter=='collect_Otsu':  #this filter leaves the data untouched ! used for data collection or a_temp used for visualisation 
-							# a_stack_snapshot = a_stack_temp.copy()
-							# else:
-							a_stack_processed = a_stack_temp
-							s_prev_filter = s_current_filter
+					#a_stack_temp[ix_slice] = slice_task(a_slice)  # dtype must match, otherwise implicit coercing
+					#print('~', end='', flush=True)
 
-					# apply after 1 stack is processed with 1 filter (2D or 3D)
-					print('output>>', a_stack_processed.dtype)
+					return a_slice
 
-					if EXAMINE_PROCESSED_STACKS:
-							s_name = 'the processed stack after filter {0} during step {1} of stack {2}'.format(s_current_filter,
-																																																	str(ix_filter),
-																																																	str(ix_stack))
-							examine(a_stack_processed, s_name, output=output_log)
 
-					if COMPARE_2_SLICES_LvsR and s_current_filter not in ['write_output', 'write_output_no_signal_filtered',
-																																'collect_stats']:
-							filehandler.extend_save_info(extra_dir_1='compare_2slices', reset_to_snapshot=True)
+				#if s_current_filter == 'active_contour':
+				#	a_stack_temp = Parallel(n_jobs=-1, verbose=10, max_nbytes=None, prefer="threads")(delayed(slice_task)(ix_slice,a_slice) for ix_slice, a_slice in enumerate(a_stack_processed))
+				#else:
+				#	for ix_slice, a_slice in enumerate(a_stack_processed):  # in 2D mode : SLICE LOOP
+				#		a_stack_temp[ix_slice] = slice_task(ix_slice,a_slice)  # dtype must match, otherwise implicit coercing
+				
+				#a_stack_temp = [slice_task(ix_slice,a_slice) for ix_slice, a_slice in enumerate(a_stack_processed) ]
 
-							for good_bad_stack_nb, slice_left_nb, slice_right_nb in a_left_right_selector:
-									if nb_stack == good_bad_stack_nb:
-											a_good_bad = [a_stack_processed[slice_left_nb - 1], a_stack_processed[slice_right_nb - 1]]
-											filehandler.d_save_info['f_name'] = 'step' + str(
-													ix_filter) + '_' + s_current_filter + '_' + str(slice_left_nb) + 'VS' + str(slice_right_nb)
-											fig = compare_good_bad_plot(a_good_bad, current_filter_ix=ix_filter,
-																									slice_left_nb=slice_left_nb, slice_right_nb=slice_right_nb)
-											filehandler.save_data(fig, file_ext='png', verbose=False)
-							filehandler.reset_save_info()
+				for ix_slice, a_slice in enumerate(a_stack_processed):  # in 2D mode : SLICE LOOP
+					a_stack_temp[ix_slice] = slice_task(ix_slice,a_slice)  # dtype must match, otherwise implicit coercing
 
-					if WRITE_EXTRA_TIF:  # if you want to write a tif of a certain stack,this is the place
-							if s_current_filter == 'reconstruction' and nb_stack == 1:
-								filehandler.d_save_info['nb_stack'] = nb_stack;
-								filehandler.d_save_info['f_name'] = 'after_reconstruction'
-								filehandler.save_data(a_stack_processed, file_ext='tif', verbose=True)
+				#force correct dtype
+				a_stack_temp = np.array(a_stack_temp, dtype=a_stack_dtype)
 
-									# apply after 1 stack is fully processed with all filters
-			print(examine(a_stack_processed, output=output_log))
-			# a_4D_processed[ix_stack,...] = a_stack_processed
+				# apply after all slices of 1 stack is processed with 1 filter (2D)
+				# if s_current_filter=='collect_Otsu':  #this filter leaves the data untouched ! used for data collection or a_temp used for visualisation 
+				# a_stack_snapshot = a_stack_temp.copy()
+				# else:
+				a_stack_processed = a_stack_temp
+				s_prev_filter = s_current_filter
+
+			# apply after 1 stack is processed with 1 filter (2D or 3D)
+			#print('output>>', a_stack_processed.dtype)
+
+			#TODO uncomment
+			#if EXAMINE_PROCESSED_STACKS:
+				
+				#s_name = 'the processed stack after filter {0} during step {1} of stack {2}'.format(s_current_filter,
+				#						str(ix_filter),
+				#						str(ix_stack))
+				#examine(a_stack_processed, s_name, output=output_log)
+
+			if COMPARE_2_SLICES_LvsR and s_current_filter not in ['write_output', 'write_output_no_signal_filtered',
+																														'collect_stats']:
+				filehandler.extend_save_info(extra_dir_1='compare_2slices', reset_to_snapshot=True)
+
+				for good_bad_stack_nb, slice_left_nb, slice_right_nb in a_left_right_selector:
+					if nb_stack == good_bad_stack_nb:
+						a_good_bad = [a_stack_processed[slice_left_nb - 1], a_stack_processed[slice_right_nb - 1]]
+						filehandler.d_save_info['f_name'] = 'step' + str(
+								ix_filter) + '_' + s_current_filter + '_' + str(slice_left_nb) + 'VS' + str(slice_right_nb)
+						fig = compare_good_bad_plot(a_good_bad, current_filter_ix=ix_filter,
+																				slice_left_nb=slice_left_nb, slice_right_nb=slice_right_nb)
+						filehandler.save_data(fig, file_ext='png', verbose=False)
+				filehandler.reset_save_info()
+
+			#TODO uncomment
+			#if WRITE_EXTRA_TIF:  # if you want to write a tif of a certain stack,this is the place
+			#	if s_current_filter == 'reconstruction' and nb_stack == 1:
+			#		filehandler.d_save_info['nb_stack'] = nb_stack;
+			#		filehandler.d_save_info['f_name'] = 'after_reconstruction'
+			#		filehandler.save_data(a_stack_processed, file_ext='tif', verbose=True)
+
+		# apply after 1 stack is fully processed with all filters
+		#TODO uncomment
+		#print(examine(a_stack_processed, output=output_log))
+		# a_4D_processed[ix_stack,...] = a_stack_processed
+		return a_4D_processed_i
+
+	a_4D_processed_swap = np.zeros((t, f, z, y, x),dtype=a_4D.dtype)
+
+	if USE_PARALLEL:
+		print("USING PARALLEL")
+		a_4D_processed_swap = Parallel(n_jobs=4, verbose=10)(delayed(stack_task)(ix_stack, nb_stack) for ix_stack, nb_stack in enumerate(l_stack_number))
+		a_4D_processed_swap = np.array(a_4D_processed_swap, dtype=a_4D.dtype)
+	else:
+		print("NOT USING PARALLEL")
+		for ix_stack, nb_stack in enumerate(l_stack_number):  # STACK LOOP
+			a_4D_processed_swap[ix_stack, ...] = stack_task(ix_stack, nb_stack)
+
+	a_4D_processed = np.swapaxes(a_4D_processed_swap, 0,1)
+
 
 	# apply after all stacks are fully processed
 	filehandler.d_save_info['nb_stack'] = ''
@@ -1208,7 +1256,8 @@ def preprocess_image(param_xml, filehandler):
 
 			# log and summary to file and screen
 	write_debug_log(output_log)
-	write_dflog(dflog)
+	#TODO uncomment
+	#write_dflog(dflog)
 
 	for nb_filter in lnb_filter_order:
 		if d_number_filter[nb_filter] == 'subtract':
