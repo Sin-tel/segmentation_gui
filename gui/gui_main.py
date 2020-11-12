@@ -112,6 +112,7 @@ def z_frame(depth):
 #    update_img(frame_cb(SegmentationImage,frame),segmentationResultPanel)
 
 
+# blocking code that is on a seperate thread
 def run_preprocessing_blocking():
     root.after(0, set_label_text, runPreButton,'running...')
 
@@ -145,7 +146,7 @@ def run_preprocessing():
     thread_pool_executor.submit(run_preprocessing_blocking)
 
     
-
+# blocking code that is on a seperate thread
 def run_segmentation_blocking():
     root.after(0, set_label_text, runSegButton,'running...')
 
