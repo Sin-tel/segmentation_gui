@@ -50,8 +50,33 @@ inputImage = Image.fromarray(inputArray[0,0,:,:])
 
 preprocessArray = np.zeros((timeDimension, zDimension, yDimension, xDimension))
 segmentationArray = np.zeros((timeDimension, zDimension, 2, yDimension, xDimension))
+
 #im_tif = Image.open("frangi.tif")
 #nframes = inputImage.n_frames
+
+def open_input:
+    inputFile = filedialog.askopenfilename(initialdir = "~",title = "Select inputfile",filetypes = (("Tiff files","*.tif")))
+    
+
+def update_pictures(inputFile):
+    inputArray = skimage.io.imread(INPUT_DATA_FOLDER+"/TL1_1_t1-5.tif")
+    timeDimension = inputArray.shape[0]
+    zDimension = inputArray.shape[1]
+    yDimension = inputArray.shape[2]
+    xDimension = inputArray.shape[3]
+    inputImage = Image.fromarray(inputArray[0,0,:,:])
+
+    preprocessArray = np.zeros((timeDimension, zDimension, yDimension, xDimension))
+    segmentationArray = np.zeros((timeDimension, zDimension, 2, yDimension, xDimension))
+
+
+
+#def save_pre_output
+
+
+#def save_segmentation_output
+
+
 
 def set_label_text(button, text):
         button['text'] = text
@@ -186,13 +211,18 @@ def run_segmentation():
 
 file = io.StringIO()
 
+
+
 brightness = 1
 originalImage = ImageTk.PhotoImage(convert(inputImage,brightness))
 inputImagePanel = Label(root, image = originalImage)
-inputImagePanel.grid(column=0, row=0)
+inputImagePanel.grid(column=0, row=1)
 
 originalImageLabel = Label(root, text = "Input Image", width = 60)
-originalImageLabel.grid(column=0, row=1)
+originalImageLabel.grid(column=0, row=0)
+
+openFileButton = Button(root, text = "Open File")
+openFileButton.grid(column=0, row=2)
 
 slidersFrame = Frame()
 timeSlider = Scale(slidersFrame, from_=0, to=timeDimension-1, length = 400,orient=HORIZONTAL, label="Time-resolution",
@@ -204,19 +234,21 @@ zDimensionSlider.grid(column=0, row=1)
 brightnessSlider = Scale(slidersFrame, from_=-4, to=1, resolution = 0.1, length = 400,orient=HORIZONTAL,
     label="Brightness", command=brightness_cb)
 brightnessSlider.grid(column=0, row=2)
-slidersFrame.grid(column=0, row=2)
+slidersFrame.grid(column=0, row=3)
 
 
 
 #preprocessing part
-
 preprocessingImage = Image.fromarray(preprocessArray[0,0,:,:])
 preprocessingImageTK = ImageTk.PhotoImage(preprocessingImage)
 preprocessingImagePanel = Label(root, image = preprocessingImageTK)
-preprocessingImagePanel.grid(column=1, row=0)
+preprocessingImagePanel.grid(column=1, row=1)
 
 preprocessingLabel = Label(root, text = "Preprocessing", width = 60)
-preprocessingLabel.grid(column=1, row=1)
+preprocessingLabel.grid(column=1, row=0)
+
+savePreButton = Button(root, text = "Save Preprocessing Output")
+savePreButton.grid(column=1, row=2)
 
 preprocessingParameters = Frame();
 seedThresholdL = Label(preprocessingParameters, text = "Seed Threshold")
@@ -225,28 +257,33 @@ seedThreshold = DoubleVar(value = 1.0)
 seedThresholdE = Entry(preprocessingParameters, textvariable = seedThreshold, width=10)
 seedThresholdE.grid(column=1, row=0)
 
-
-
 acceptanceLevelL = Label(preprocessingParameters, text = "Membrane Acceptance Level")
 acceptanceLevelL.grid(column=0, row=1)
 acceptanceLevel = DoubleVar(value = 5.5)
 acceptanceLevelE = Entry(preprocessingParameters, textvariable =acceptanceLevel, width=10)
 acceptanceLevelE.grid(column=1, row=1)
 
-preprocessingParameters.grid(column=1, row=2)
+preprocessingParameters.grid(column=1, row=3)
 
 runPreButton = Button(root, text = "run", command = run_preprocessing)
-runPreButton.grid(column=1, row=3)
+runPreButton.grid(column=1, row=4)
+
+
 
 #Segmentation result part
+
+
 
 segmentationImage =Image.fromarray(segmentationArray[0,0,0,:,:])
 segmentationImageTK = ImageTk.PhotoImage(segmentationImage)
 segmentationResultPanel = Label(root, image=segmentationImageTK)
-segmentationResultPanel.grid(column=2, row=0)
+segmentationResultPanel.grid(column=2, row=1)
 
 SegmentationLabel = Label(root, text = "Segmentation", width = 60)
-SegmentationLabel.grid(column=2, row=1)
+SegmentationLabel.grid(column=2, row=0)
+
+saveSegmentationButton = Button(root, text = "Save Segmentation Output")
+saveSegmentationButton.grid(column=2, row=2)
 
 SegmentationParameters = Frame();
 
@@ -291,10 +328,11 @@ resolutionEy.grid(column=2,row=0)
 resolutionEz.grid(column=3,row=0)
 resolutionFrame.grid(column=1, row=4)
 
-SegmentationParameters.grid(column=2, row=2)
+SegmentationParameters.grid(column=2, row=3)
 
 runSegButton = Button(root, text = "run", command = run_segmentation)
-runSegButton.grid(column=2, row=3)
+runSegButton.grid(column=2, row=4)
+
 
 
 root.title("SpheresDT-GUI")
