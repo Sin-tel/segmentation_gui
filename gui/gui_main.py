@@ -134,12 +134,12 @@ def run_preprocessing_blocking():
 
 def run_preprocessing():
     copyfile(SCRIPT_FOLDER+"/PARAMS.xml", SCRIPT_FOLDER+"/PARAMSCOPY.xml")
-    with open(SCRIPT_FOLDER+"/PARAMS.xml","r") as prm:
+    with open(SCRIPT_FOLDER+"/PARAMS.xml","r", encoding = 'cp1252') as prm:
         data = xmltodict.parse(prm.read())
         data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["SEED_THR_DIVIDE_FACTOR"]["@value"] = str(seedThresholdE.get())
         data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["MEMBRANE_ACCEPTANCE_LEVEL"]["@value"] = str(acceptanceLevelE.get())
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "1"        
-    with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
+    with open(SCRIPT_FOLDER+"/PARAMS.xml",'w', encoding = 'cp1252') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
 
     
@@ -167,7 +167,7 @@ def run_segmentation_blocking():
 
 def run_segmentation():
     copyfile(SCRIPT_FOLDER+"/PARAMS.xml", SCRIPT_FOLDER+"/PARAMSCOPY.xml")
-    with open(SCRIPT_FOLDER+"/PARAMS.xml","r") as prm:
+    with open(SCRIPT_FOLDER+"/PARAMS.xml","r", encoding = 'cp1252') as prm:
         data = xmltodict.parse(prm.read())
         data["body"]["spheresDT"]["parms"]["MIN_CELL_RADIUS"]["@value"] = str(minCellRadiusE.get())
         data["body"]["spheresDT"]["parms"]["MIN_SPHERE_RADIUS"]["@value"] = str(minSphereRadiusE.get())
@@ -176,7 +176,7 @@ def run_segmentation():
         data["body"]["spheresDT"]["parms"]["dxyz"]["@value"] = (str(resolutionEx.get())+";"+str(resolutionEy.get())+";"
             +str())
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "2"
-    with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
+    with open(SCRIPT_FOLDER+"/PARAMS.xml",'w', encoding = 'cp1252') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
 
     thread_pool_executor.submit(run_segmentation_blocking)
