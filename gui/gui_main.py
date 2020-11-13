@@ -3,7 +3,7 @@ from tkinter.filedialog import askdirectory
 from PIL import ImageTk, Image, ImageEnhance
 from matplotlib import cm
 from shutil import copyfile
-import skimage
+import skimage.io
 import numpy as np
 import xmltodict
 import math
@@ -29,13 +29,6 @@ root = Tk()
 
 thread_pool_executor = futures.ThreadPoolExecutor(max_workers=1)
 
-# for f_name in os.listdir(INPUT_DATA_FOLDER):
-#     if fnmatch.fnmatch(f_name, '*.tif'):                  #need more clear description of the file names
-#         inputImageName = f_name
-# print(INPUT_DATA_FOLDER+"/"+inputImageName+" loaded")
-# im_tif = Image.open(INPUT_DATA_FOLDER+"/"+inputImageName)     
-# nframes = im_tif.n_frames
-
 inputArray = skimage.io.imread(INPUT_DATA_FOLDER+"/TL1_1_t1-5.tif")
 timeDimension = inputArray.shape[0]
 zDimension = inputArray.shape[1]
@@ -45,8 +38,6 @@ inputImage = Image.fromarray(inputArray[0,0,:,:])
 
 preprocessArray = np.zeros((timeDimension, zDimension, yDimension, xDimension))
 segmentationArray = np.zeros((timeDimension, zDimension, 2, yDimension, xDimension))
-#im_tif = Image.open("frangi.tif")
-#nframes = inputImage.n_frames
 
 def set_label_text(button, text):
         button['text'] = text
@@ -62,13 +53,6 @@ def update_img(newim,imagePanel):
     new = ImageTk.PhotoImage(newim)
     imagePanel.configure(image=new)
     imagePanel.image = new
-
-#def frame_cb(im,frame):
-#   
-#    print(frame)
-#    im.seek(int(frame))
-#    newim = convert(im,brightness)
-#    return newim 
     
     
 def brightness_cb(b):
@@ -96,15 +80,6 @@ def z_frame(depth):
     update_img(inputImage, inputImagePanel)    
     update_img(preprocessingImage, preprocessingImagePanel)
     update_img(segmentationImage, segmentationResultPanel)
-
-#def frame_input(frame):
-#    update_img(frame_cb(inputImage,frame),inputImagePanel)
-
-#def frame_pre(frame):
-#    update_img(frame_cb(Image.fromarray((skimage.io.imread(PREPROCESSING_FOLDER+"/membranes_blend_z.tif")[:,:,0,0]), "1"),frame),preprocessingImagePanel)
-
-#def frame_seg(frame):
-#    update_img(frame_cb(SegmentationImage,frame),segmentationResultPanel)
 
 
 # blocking code that is on a seperate thread
@@ -176,9 +151,11 @@ def run_segmentation():
 
     thread_pool_executor.submit(run_segmentation_blocking)
 
-
-    
- 
+def redirector(inputStr):
+    textbox.configure(state='normal')
+    textbox.insert(INSERT, inputStr)
+    textbox.configure(state='disabled')
+sys.stdout.write = redirector #whenever sys.stdout.write is called, redirector is called.
 
 file = io.StringIO()
 
@@ -292,6 +269,8 @@ SegmentationParameters.grid(column=2, row=2)
 runSegButton = Button(root, text = "run", command = run_segmentation)
 runSegButton.grid(column=2, row=3)
 
+textbox=Text(root)
+textbox.grid(column=3, row=0)
 
 root.title("SpheresDT-GUI")
 root.mainloop()
