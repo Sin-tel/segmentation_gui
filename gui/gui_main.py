@@ -1,21 +1,16 @@
-
 from tkinter import *
 from tkinter.filedialog import askdirectory, askopenfilename 
 from PIL import ImageTk, Image, ImageEnhance
 from matplotlib import cm
 from shutil import copyfile
-import skimage
+import skimage.io
 import numpy as np
 import xmltodict
 import math
 import os,io
 from concurrent import futures
 import time
-
 import sys
-
-
-
 
 from contextlib import redirect_stdout
 #MAIN_FOLDER = askdirectory()
@@ -33,16 +28,6 @@ import SDT_MAIN
 root = Tk()
 
 thread_pool_executor = futures.ThreadPoolExecutor(max_workers=1)
-
-# for f_name in os.listdir(INPUT_DATA_FOLDER):
-#     if fnmatch.fnmatch(f_name, '*.tif'):                  #need more clear description of the file names
-#         inputImageName = f_name
-# print(INPUT_DATA_FOLDER+"/"+inputImageName+" loaded")
-# im_tif = Image.open(INPUT_DATA_FOLDER+"/"+inputImageName)     
-# nframes = im_tif.n_frames
-
-#im_tif = Image.open("frangi.tif")
-#nframes = inputImage.n_frames
 
 def open_input():
     global inputFile
@@ -102,13 +87,6 @@ def update_img(newim,imagePanel):
     new = ImageTk.PhotoImage(newim)
     imagePanel.configure(image=new)
     imagePanel.image = new
-
-#def frame_cb(im,frame):
-#   
-#    print(frame)
-#    im.seek(int(frame))
-#    newim = convert(im,brightness)
-#    return newim 
     
     
 def brightness_cb(b):
@@ -135,16 +113,8 @@ def z_frame(depth):
     update_img(preprocessingImage, preprocessingImagePanel)
     update_img(segmentationImage, segmentationResultPanel)
 
-#def frame_input(frame):
-#    update_img(frame_cb(inputImage,frame),inputImagePanel)
 
-#def frame_pre(frame):
-#    update_img(frame_cb(Image.fromarray((skimage.io.imread(PREPROCESSING_FOLDER+"/membranes_blend_z.tif")[:,:,0,0]), "1"),frame),preprocessingImagePanel)
-
-#def frame_seg(frame):
-#    update_img(frame_cb(SegmentationImage,frame),segmentationResultPanel)
-
-
+# blocking code that is on a seperate thread
 def run_preprocessing_blocking():
     root.after(0, set_label_text, runPreButton,'running...')
 
@@ -166,7 +136,7 @@ def run_preprocessing_blocking():
 
 def run_preprocessing():
     copyfile(SCRIPT_FOLDER+"/PARAMS.xml", SCRIPT_FOLDER+"/PARAMSCOPY.xml")
-    with open(SCRIPT_FOLDER+"/PARAMS.xml","r") as prm:
+    with open(SCRIPT_FOLDER+"/PARAMS.xml","r", encoding = 'utf-8') as prm:
         data = xmltodict.parse(prm.read())
         data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["SEED_THR_DIVIDE_FACTOR"]["@value"] = str(seedThresholdE.get())
         data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["MEMBRANE_ACCEPTANCE_LEVEL"]["@value"] = str(acceptanceLevelE.get())
@@ -179,7 +149,7 @@ def run_preprocessing():
     thread_pool_executor.submit(run_preprocessing_blocking)
 
     
-
+# blocking code that is on a seperate thread
 def run_segmentation_blocking():
     root.after(0, set_label_text, runSegButton,'running...')
 
@@ -200,7 +170,7 @@ def run_segmentation_blocking():
 
 def run_segmentation():
     copyfile(SCRIPT_FOLDER+"/PARAMS.xml", SCRIPT_FOLDER+"/PARAMSCOPY.xml")
-    with open(SCRIPT_FOLDER+"/PARAMS.xml","r") as prm:
+    with open(SCRIPT_FOLDER+"/PARAMS.xml","r", encoding = 'utf-8') as prm:
         data = xmltodict.parse(prm.read())
         data["body"]["spheresDT"]["parms"]["MIN_CELL_RADIUS"]["@value"] = str(minCellRadiusE.get())
         data["body"]["spheresDT"]["parms"]["MIN_SPHERE_RADIUS"]["@value"] = str(minSphereRadiusE.get())
@@ -215,9 +185,11 @@ def run_segmentation():
 
     thread_pool_executor.submit(run_segmentation_blocking)
 
-
-    
- 
+def redirector(inputStr):
+    textbox.configure(state='normal')
+    textbox.insert(INSERT, inputStr)
+    textbox.configure(state='disabled')
+sys.stdout.write = redirector #whenever sys.stdout.write is called, redirector is called.
 
 file = io.StringIO()
 
@@ -332,6 +304,9 @@ runSegButton.grid(column=2, row=4)
 brightness = 1
 inputFile = (INPUT_DATA_FOLDER+"/TL1_1_t1-5.tif")
 inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = update_gui_input(inputFile)
+textbox=Text(root)
+textbox.grid(column=3, row=0)
+
 
 root.title("SpheresDT-GUI")
 root.mainloop()
