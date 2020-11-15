@@ -304,8 +304,8 @@ runSegButton.grid(column=2, row=4)
 brightness = 1
 inputFile = (INPUT_DATA_FOLDER+"/TL1_1_t1-5.tif")
 inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = update_gui_input(inputFile)
-textbox=Text(root)
-textbox.grid(column=3, row=0)
+#textbox=Text(root)
+#textbox.grid(column=3, row=0)
 
 
 root.title("SpheresDT-GUI")
