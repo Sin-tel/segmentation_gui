@@ -37,8 +37,7 @@ def open_input():
 
 def save_pre_output():
     filePath = asksaveasfilename(intialdir = "~", title="Save as", filetypes=[("TIF File", "*.tif")])
-    copyfile(PREPROCESSING_FOLDER+"membranes.tif", fileName)   
-
+    copyfile(PREPROCESSING_FOLDER+"/membranes.tif", fileName)
 
 
 def save_segmentation_output():
@@ -139,9 +138,7 @@ def run_preprocessing_blocking():
     copyfile(SCRIPT_FOLDER+"/PARAMSCOPY.xml", SCRIPT_FOLDER+"/PARAMS.xml")
     os.remove(SCRIPT_FOLDER+"/PARAMSCOPY.xml")
 
-def run_preprocessing():
-    global inputFile
-    print(inputFile)
+def run_preprocessing():    
     copyfile(SCRIPT_FOLDER+"/PARAMS.xml", SCRIPT_FOLDER+"/PARAMSCOPY.xml")
     with open(SCRIPT_FOLDER+"/PARAMS.xml","r", encoding = 'utf-8') as prm:
         data = xmltodict.parse(prm.read())
@@ -193,11 +190,11 @@ def run_segmentation():
 
     thread_pool_executor.submit(run_segmentation_blocking)
 
-def redirector(inputStr):
-    textbox.configure(state='normal')
-    textbox.insert(INSERT, inputStr)
-    textbox.configure(state='disabled')
-sys.stdout.write = redirector #whenever sys.stdout.write is called, redirector is called.
+#def redirector(inputStr):
+#    textbox.configure(state='normal')
+#    textbox.insert(INSERT, inputStr)
+#    textbox.configure(state='disabled')
+#sys.stdout.write = redirector #whenever sys.stdout.write is called, redirector is called.
 
 file = io.StringIO()
 
@@ -227,7 +224,7 @@ preprocessingImagePanel.grid(column=1, row=1)
 preprocessingLabel = Label(root, text = "Preprocessing", width = 60)
 preprocessingLabel.grid(column=1, row=0)
 
-savePreButton = Button(root, text = "Save Preprocessing Output")
+savePreButton = Button(root, text = "Save Preprocessing Output", command=save_pre_output)
 savePreButton.grid(column=1, row=2)
 
 preprocessingParameters = Frame();
@@ -258,7 +255,7 @@ segmentationResultPanel.grid(column=2, row=1)
 SegmentationLabel = Label(root, text = "Segmentation", width = 60)
 SegmentationLabel.grid(column=2, row=0)
 
-saveSegmentationButton = Button(root, text = "Save Segmentation Output")
+saveSegmentationButton = Button(root, text = "Save Segmentation Output", command=save_segmentation_output)
 saveSegmentationButton.grid(column=2, row=2)
 
 SegmentationParameters = Frame();
@@ -313,10 +310,8 @@ brightness = 1
 inputFile = (INPUT_DATA_FOLDER+"/TL1_1_t1-5.tif")
 inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = update_gui_input(inputFile)
 
-textbox=Text(root)
-textbox.grid(column=3, row=1)
+#textbox=Text(root)
+#textbox.grid(column=3, row=1)
 
 root.title("SpheresDT-GUI")
 root.mainloop()
-
-
