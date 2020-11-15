@@ -13,13 +13,17 @@ import time
 import sys
 
 from contextlib import redirect_stdout
-#MAIN_FOLDER = askdirectory()
-MAIN_FOLDER ="../IBP_2020_testrunSDT"
+
+MAIN_FOLDER = os.path.abspath("../IBP_2020_testrunSDT")
+
 SCRIPT_FOLDER = MAIN_FOLDER + "/SCRIPTS"
 INPUT_DATA_FOLDER = MAIN_FOLDER + "/INPUT"
 OUTPUT_DATA_FOLDER = MAIN_FOLDER + "/OUTPUT"
 PREPROCESSING_FOLDER = OUTPUT_DATA_FOLDER +"/002_preprocessing"
 SPHERES_DT_FOLDER = OUTPUT_DATA_FOLDER +"/003_spheresDT"
+
+
+inputFile = INPUT_DATA_FOLDER+"/TL1_1_t1-5.tif"
 
 
 sys.path.append(SCRIPT_FOLDER)
@@ -31,18 +35,22 @@ thread_pool_executor = futures.ThreadPoolExecutor(max_workers=1)
 
 def open_input():
     global inputFile
-    inputFile = askopenfilename(initialdir = "~",title = "Select inputfile",filetypes=[("TIF File","*.tif")])
-    global inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider
-    inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = update_gui_input(inputFile)  
+    getFile = askopenfilename(title = "Select inputfile",filetypes=[("TIF File","*.tif")])
+    if getFile:
+        inputFile = getFile
+        global inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider
+        inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = update_gui_input(inputFile)  
 
 def save_pre_output():
-    filePath = asksaveasfilename(intialdir = "~", title="Save as", filetypes=[("TIF File", "*.tif")])
-    copyfile(PREPROCESSING_FOLDER+"/membranes.tif", fileName)
+    fileName = asksaveasfilename(defaultextension='.tif',title="Save as", filetypes=[("TIF File", "*.tif")])
+    if fileName:
+        copyfile(PREPROCESSING_FOLDER+"/membranes.tif", fileName)
 
 
 def save_segmentation_output():
-     filePath = asksaveasfilename(intialdir = "~", title="Save as", filetypes=[("TIF File", "*.tif")])
-     copyfile(SPHERES_DT_FOLDER+"/RGBA_clusterview2.tif", fileName)
+    fileName = asksaveasfilename(defaultextension='.tif',title="Save as", filetypes=[("TIF File", "*.tif")])
+    if fileName:
+        copyfile(SPHERES_DT_FOLDER+"/RGBA_clusterview2.tif", fileName)
     
 
 def update_gui_input(inputFile):
@@ -307,7 +315,6 @@ runSegButton = Button(root, text = "run", command = run_segmentation)
 runSegButton.grid(column=2, row=4)
 
 brightness = 1
-inputFile = (INPUT_DATA_FOLDER+"/TL1_1_t1-5.tif")
 inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = update_gui_input(inputFile)
 textbox=Text(root)
 textbox.grid(column=3, row=1)
