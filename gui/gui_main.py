@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter.filedialog import askdirectory, askopenfilename 
+from tkinter.filedialog import askdirectory, askopenfilename, asksaveasfilename 
 from PIL import ImageTk, Image, ImageEnhance
 from matplotlib import cm
 from shutil import copyfile
@@ -33,7 +33,17 @@ def open_input():
     global inputFile
     inputFile = askopenfilename(initialdir = "~",title = "Select inputfile",filetypes=[("TIF File","*.tif")])
     global inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider
-    inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = update_gui_input(inputFile)
+    inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = update_gui_input(inputFile)  
+
+def save_pre_output():
+    filePath = asksaveasfilename(intialdir = "~", title="Save as", filetypes=[("TIF File", "*.tif")])
+    copyfile(PREPROCESSING_FOLDER+"membranes.tif", fileName)   
+
+
+
+def save_segmentation_output():
+     filePath = asksaveasfilename(intialdir = "~", title="Save as", filetypes=[("TIF File", "*.tif")])
+     copyfile(SPHERES_DT_FOLDER+"/RGBA_clusterview2.tif", fileName)
     
 
 def update_gui_input(inputFile):
@@ -60,18 +70,13 @@ def update_gui_input(inputFile):
     return inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider
 
 
-
-
-
-
-
-
-#def save_pre_output
-
-
-#def save_segmentation_output
-
-
+def total_stacks_string():
+    global inputArray
+    timeDimension = inputArray.shape[0]
+    stringRange = "1"
+    for x in range(2, timeDimension + 1):
+        stringRange = (stringRange + ";" + str(x))
+    return stringRange
 
 def set_label_text(button, text):
         button['text'] = text
@@ -129,19 +134,22 @@ def run_preprocessing_blocking():
 
     global preprocessArray
     preprocessArray = skimage.io.imread(PREPROCESSING_FOLDER+"/membranes.tif") * 255
-    preprocessingImage = Image.fromarray(preprocessArray[0,0,:,:])
+    preprocessingImage = Image.fromarray(preprocessArray[0,0,:,:])    
     update_img(preprocessingImage, preprocessingImagePanel)
     copyfile(SCRIPT_FOLDER+"/PARAMSCOPY.xml", SCRIPT_FOLDER+"/PARAMS.xml")
     os.remove(SCRIPT_FOLDER+"/PARAMSCOPY.xml")
 
 def run_preprocessing():
+    global inputFile
+    print(inputFile)
     copyfile(SCRIPT_FOLDER+"/PARAMS.xml", SCRIPT_FOLDER+"/PARAMSCOPY.xml")
     with open(SCRIPT_FOLDER+"/PARAMS.xml","r", encoding = 'utf-8') as prm:
         data = xmltodict.parse(prm.read())
         data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["SEED_THR_DIVIDE_FACTOR"]["@value"] = str(seedThresholdE.get())
         data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["MEMBRANE_ACCEPTANCE_LEVEL"]["@value"] = str(acceptanceLevelE.get())
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "1" 
-        data["body"]["MAIN"]["paths"]["img_raw_file"]["@value"] = inputFile       
+        data["body"]["MAIN"]["paths"]["img_raw_file"]["@value"] = str(inputFile)  
+        data["body"]["preprocessing"]["flowcontrol"]["l_stack_number"]["@value"] = str(total_stacks_string())   
     with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
 
@@ -179,7 +187,7 @@ def run_segmentation():
         data["body"]["spheresDT"]["parms"]["dxyz"]["@value"] = (str(resolutionEx.get())+";"+str(resolutionEy.get())+";"
             +str())
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "2"
-        data["body"]["MAIN"]["paths"]["img_raw_file"]["@value"] = inputFile         
+        data["body"]["MAIN"]["paths"]["img_raw_file"]["@value"] = str(inputFile)                 
     with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
 
@@ -304,9 +312,9 @@ runSegButton.grid(column=2, row=4)
 brightness = 1
 inputFile = (INPUT_DATA_FOLDER+"/TL1_1_t1-5.tif")
 inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = update_gui_input(inputFile)
-#textbox=Text(root)
-#textbox.grid(column=3, row=0)
 
+textbox=Text(root)
+textbox.grid(column=3, row=1)
 
 root.title("SpheresDT-GUI")
 root.mainloop()
