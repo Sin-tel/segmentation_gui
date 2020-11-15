@@ -190,11 +190,11 @@ def run_segmentation():
 
     thread_pool_executor.submit(run_segmentation_blocking)
 
-#def redirector(inputStr):
-#    textbox.configure(state='normal')
-#    textbox.insert(INSERT, inputStr)
-#    textbox.configure(state='disabled')
-#sys.stdout.write = redirector #whenever sys.stdout.write is called, redirector is called.
+def redirector(inputStr):
+    textbox.configure(state='normal')
+    textbox.insert(INSERT, inputStr)
+    textbox.configure(state='disabled')
+sys.stdout.write = redirector #whenever sys.stdout.write is called, redirector is called.
 
 file = io.StringIO()
 
@@ -309,9 +309,8 @@ runSegButton.grid(column=2, row=4)
 brightness = 1
 inputFile = (INPUT_DATA_FOLDER+"/TL1_1_t1-5.tif")
 inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = update_gui_input(inputFile)
-
-#textbox=Text(root)
-#textbox.grid(column=3, row=1)
+textbox=Text(root)
+textbox.grid(column=3, row=1)
 
 root.title("SpheresDT-GUI")
 root.mainloop()
