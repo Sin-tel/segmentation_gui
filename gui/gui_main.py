@@ -65,10 +65,10 @@ def update_gui_input(inputFile):
     preprocessArray = np.zeros((timeDimension, zDimension, yDimension, xDimension))
     segmentationArray = np.zeros((timeDimension, zDimension, 2, yDimension, xDimension))
 
-    timeSlider = Scale(slidersFrame, from_=0, to=timeDimension-1, length = 400,orient=HORIZONTAL, label="Time-resolution",
+    timeSlider = Scale(slidersFrame, from_=0, to=timeDimension-1, length = 400,orient=HORIZONTAL, label="Time frame",
     command=time_frame)
     timeSlider.grid(column=0, row=0)
-    zDimensionSlider = Scale(slidersFrame, from_=0, to=zDimension-1, length = 400,orient=HORIZONTAL, label="Z-resolution",
+    zDimensionSlider = Scale(slidersFrame, from_=0, to=zDimension-1, length = 400,orient=HORIZONTAL, label="Z frame",
     command=z_frame)
     zDimensionSlider.grid(column=0, row=1)
 
@@ -228,7 +228,8 @@ root.protocol("WM_DELETE_WINDOW", on_closing)
 
 def redirector(inputStr):
     textbox.configure(state='normal')
-    textbox.insert(INSERT, inputStr)
+    textbox.insert("end", inputStr)
+    textbox.see("end")
     textbox.configure(state='disabled')
     stdout_original(inputStr)
 
@@ -351,7 +352,6 @@ inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = u
 
 textbox=Text(root, height = 10, width = 120)
 textbox.grid(column=0, row=5, columnspan = 3, padx = 12, pady = 12)
-
 
 root.title("SpheresDT-GUI")
 root.mainloop()
