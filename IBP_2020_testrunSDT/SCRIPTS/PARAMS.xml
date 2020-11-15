@@ -12,7 +12,7 @@
 	</RUN>
 	<MAIN>
 		<paths>
-			<img_raw_file value="../INPUT/TL1_1_t1-5.tif">
+			<img_raw_file value="D:\Documenten\python\segmentation_gui\IBP_2020_testrunSDT/INPUT/TL1_1_t1-5.tif">
 				<description>the filename of the raw 4D image. If this is a directory every file in the directory will be processed</description>
 				<default>C:\Users\wimth\Documents\THESIS\baseimages\MAIN_INPUT_IMAGES\TL2_crop_1ch_emb1of3.tif</default>
 				<dtype>path</dtype>

@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter.filedialog import askdirectory
+from tkinter.filedialog import askdirectory, askopenfilename, asksaveasfilename 
 from PIL import ImageTk, Image, ImageEnhance
 from matplotlib import cm
 from shutil import copyfile
@@ -11,15 +11,21 @@ import os,io
 from concurrent import futures
 import time
 import sys
+import signal, psutil
+
 
 from contextlib import redirect_stdout
-#MAIN_FOLDER = askdirectory()
-MAIN_FOLDER ="../IBP_2020_testrunSDT"
+
+MAIN_FOLDER = os.path.abspath("../IBP_2020_testrunSDT")
+
 SCRIPT_FOLDER = MAIN_FOLDER + "/SCRIPTS"
 INPUT_DATA_FOLDER = MAIN_FOLDER + "/INPUT"
 OUTPUT_DATA_FOLDER = MAIN_FOLDER + "/OUTPUT"
 PREPROCESSING_FOLDER = OUTPUT_DATA_FOLDER +"/002_preprocessing"
 SPHERES_DT_FOLDER = OUTPUT_DATA_FOLDER +"/003_spheresDT"
+
+
+inputFile = INPUT_DATA_FOLDER+"/TL1_1_t1-5.tif"
 
 
 sys.path.append(SCRIPT_FOLDER)
@@ -29,20 +35,60 @@ root = Tk()
 
 thread_pool_executor = futures.ThreadPoolExecutor(max_workers=1)
 
-inputArray = skimage.io.imread(INPUT_DATA_FOLDER+"/TL1_1_t1-5.tif")
-timeDimension = inputArray.shape[0]
-zDimension = inputArray.shape[1]
-yDimension = inputArray.shape[2]
-xDimension = inputArray.shape[3]
-inputImage = Image.fromarray(inputArray[0,0,:,:])
+def open_input():
+    global inputFile
+    getFile = askopenfilename(title = "Select inputfile",filetypes=[("TIF File","*.tif")])
+    if getFile:
+        inputFile = getFile
+        global inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider
+        inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = update_gui_input(inputFile)  
 
-preprocessArray = np.zeros((timeDimension, zDimension, yDimension, xDimension))
-segmentationArray = np.zeros((timeDimension, zDimension, 2, yDimension, xDimension))
+def save_pre_output():
+    fileName = asksaveasfilename(defaultextension='.tif',title="Save as", filetypes=[("TIF File", "*.tif")])
+    if fileName:
+        copyfile(PREPROCESSING_FOLDER+"/membranes.tif", fileName)
+
+
+def save_segmentation_output():
+    fileName = asksaveasfilename(defaultextension='.tif',title="Save as", filetypes=[("TIF File", "*.tif")])
+    if fileName:
+        copyfile(SPHERES_DT_FOLDER+"/RGBA_clusterview2.tif", fileName)
+    
+
+def update_gui_input(inputFile):
+    inputArray = skimage.io.imread(inputFile)
+    timeDimension = inputArray.shape[0]
+    zDimension = inputArray.shape[1]
+    yDimension = inputArray.shape[2]
+    xDimension = inputArray.shape[3]
+    inputImage = Image.fromarray(inputArray[0,0,:,:])
+    preprocessArray = np.zeros((timeDimension, zDimension, yDimension, xDimension))
+    segmentationArray = np.zeros((timeDimension, zDimension, 2, yDimension, xDimension))
+
+    timeSlider = Scale(slidersFrame, from_=0, to=timeDimension-1, length = 400,orient=HORIZONTAL, label="Time-resolution",
+    command=time_frame)
+    timeSlider.grid(column=0, row=0)
+    zDimensionSlider = Scale(slidersFrame, from_=0, to=zDimension-1, length = 400,orient=HORIZONTAL, label="Z-resolution",
+    command=z_frame)
+    zDimensionSlider.grid(column=0, row=1)
+
+    update_img(convert(Image.fromarray(inputArray[0,0,:,:]),1),inputImagePanel)
+    update_img(Image.fromarray(preprocessArray[0,0,:,:]),preprocessingImagePanel)
+    update_img(Image.fromarray(segmentationArray[0,0,0,:,:]), segmentationResultPanel)
+
+    return inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider
+
+
+def total_stacks_string():
+    global inputArray
+    timeDimension = inputArray.shape[0]
+    stringRange = "1"
+    for x in range(2, timeDimension + 1):
+        stringRange = (stringRange + ";" + str(x))
+    return stringRange
 
 def set_label_text(button, text):
         button['text'] = text
-
-
 
 def convert(im,b):
     imarray = np.array(im)
@@ -54,7 +100,6 @@ def update_img(newim,imagePanel):
     imagePanel.configure(image=new)
     imagePanel.image = new
     
-    
 def brightness_cb(b):
     global brightness
     brightness = math.exp(float(b))
@@ -62,7 +107,6 @@ def brightness_cb(b):
     update_img(newim,inputImagePanel)
 
 def time_frame(timepoint):
-    global inputImage
     inputImage = Image.fromarray(inputArray[int(timepoint), int(zDimensionSlider.get()),:,:])
     inputImage = convert(inputImage, brightness)
     preprocessingImage = Image.fromarray(preprocessArray[int(timepoint), int(zDimensionSlider.get()),:,:])
@@ -72,7 +116,6 @@ def time_frame(timepoint):
     update_img(segmentationImage, segmentationResultPanel)
 
 def z_frame(depth):
-    global inputImage
     inputImage = Image.fromarray(inputArray[int(timeSlider.get()), int(depth),:,:])
     inputImage = convert(inputImage,brightness)
     preprocessingImage = Image.fromarray(preprocessArray[int(timeSlider.get()), int(depth),:,:])
@@ -91,25 +134,32 @@ def run_preprocessing_blocking():
     #     #self.after(0, self.listbox_insert, number)
     #     print(number)
     #     time.sleep(1)
+    tic = time.perf_counter()
+
     SDT_MAIN.main(SCRIPT_FOLDER + "/PARAMS.xml")
+
+    toc = time.perf_counter()
+    print(f"preprocessing took {toc - tic:0.4f} seconds")
 
     root.after(0, set_label_text, runPreButton,'run')
 
     global preprocessArray
     preprocessArray = skimage.io.imread(PREPROCESSING_FOLDER+"/membranes.tif") * 255
-    preprocessingImage = Image.fromarray(preprocessArray[0,0,:,:])
+    preprocessingImage = Image.fromarray(preprocessArray[0,0,:,:])    
     update_img(preprocessingImage, preprocessingImagePanel)
     copyfile(SCRIPT_FOLDER+"/PARAMSCOPY.xml", SCRIPT_FOLDER+"/PARAMS.xml")
     os.remove(SCRIPT_FOLDER+"/PARAMSCOPY.xml")
 
-def run_preprocessing():
+def run_preprocessing():    
     copyfile(SCRIPT_FOLDER+"/PARAMS.xml", SCRIPT_FOLDER+"/PARAMSCOPY.xml")
     with open(SCRIPT_FOLDER+"/PARAMS.xml","r", encoding = 'utf-8') as prm:
         data = xmltodict.parse(prm.read())
         data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["SEED_THR_DIVIDE_FACTOR"]["@value"] = str(seedThresholdE.get())
         data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["MEMBRANE_ACCEPTANCE_LEVEL"]["@value"] = str(acceptanceLevelE.get())
-        data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "1"        
-    with open(SCRIPT_FOLDER+"/PARAMS.xml",'w', encoding = 'utf-8') as prm:
+        data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "1" 
+        data["body"]["MAIN"]["paths"]["img_raw_file"]["@value"] = str(inputFile)  
+        data["body"]["preprocessing"]["flowcontrol"]["l_stack_number"]["@value"] = str(total_stacks_string())   
+    with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
 
     
@@ -124,7 +174,14 @@ def run_segmentation_blocking():
     # for number in range(5):
     #     print(number)
     #     time.sleep(1)
+    tic = time.perf_counter()
+
     SDT_MAIN.main(SCRIPT_FOLDER + "/PARAMS.xml")
+
+    toc = time.perf_counter()
+    print(f"segmentation took {toc - tic:0.4f} seconds")
+
+    
 
     root.after(0, set_label_text, runSegButton,'run')
 
@@ -146,50 +203,69 @@ def run_segmentation():
         data["body"]["spheresDT"]["parms"]["dxyz"]["@value"] = (str(resolutionEx.get())+";"+str(resolutionEy.get())+";"
             +str())
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "2"
-    with open(SCRIPT_FOLDER+"/PARAMS.xml",'w', encoding = 'utf-8') as prm:
+        data["body"]["MAIN"]["paths"]["img_raw_file"]["@value"] = str(inputFile)                 
+    with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
 
     thread_pool_executor.submit(run_segmentation_blocking)
+
+def kill_child_processes(parent_pid, sig=signal.SIGTERM):
+    try:
+        parent = psutil.Process(parent_pid)
+    except psutil.NoSuchProcess:
+        return
+    children = parent.children(recursive=True)
+    for process in children:
+        process.send_signal(sig)
+
+def on_closing():
+    thread_pool_executor.shutdown(wait=False)
+    # force terminate all child processes
+    kill_child_processes(os.getpid())
+    root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", on_closing)
 
 def redirector(inputStr):
     textbox.configure(state='normal')
     textbox.insert(INSERT, inputStr)
     textbox.configure(state='disabled')
+    stdout_original(inputStr)
+
+stdout_original = sys.stdout.write
 sys.stdout.write = redirector #whenever sys.stdout.write is called, redirector is called.
+sys.stderr.write = redirector #for some reason joblib uses stderr so we will redirect it too
 
 file = io.StringIO()
 
-brightness = 1
-originalImage = ImageTk.PhotoImage(convert(inputImage,brightness))
-inputImagePanel = Label(root, image = originalImage)
-inputImagePanel.grid(column=0, row=0)
+
+inputImagePanel = Label(root)
+inputImagePanel.grid(column=0, row=1)
 
 originalImageLabel = Label(root, text = "Input Image", width = 60)
-originalImageLabel.grid(column=0, row=1)
+originalImageLabel.grid(column=0, row=0)
+
+openFileButton = Button(root, text = "Open File", command = open_input)
+openFileButton.grid(column=0, row=2)
 
 slidersFrame = Frame()
-timeSlider = Scale(slidersFrame, from_=0, to=timeDimension-1, length = 400,orient=HORIZONTAL, label="Time-resolution",
- command=time_frame)
-timeSlider.grid(column=0, row=0)
-zDimensionSlider = Scale(slidersFrame, from_=0, to=zDimension-1, length = 400,orient=HORIZONTAL, label="Z-resolution",
- command=z_frame)
-zDimensionSlider.grid(column=0, row=1)
 brightnessSlider = Scale(slidersFrame, from_=-4, to=1, resolution = 0.1, length = 400,orient=HORIZONTAL,
     label="Brightness", command=brightness_cb)
 brightnessSlider.grid(column=0, row=2)
-slidersFrame.grid(column=0, row=2)
+slidersFrame.grid(column=0, row=3)
 
 
 
 #preprocessing part
 
-preprocessingImage = Image.fromarray(preprocessArray[0,0,:,:])
-preprocessingImageTK = ImageTk.PhotoImage(preprocessingImage)
-preprocessingImagePanel = Label(root, image = preprocessingImageTK)
-preprocessingImagePanel.grid(column=1, row=0)
+preprocessingImagePanel = Label(root)
+preprocessingImagePanel.grid(column=1, row=1)
 
 preprocessingLabel = Label(root, text = "Preprocessing", width = 60)
-preprocessingLabel.grid(column=1, row=1)
+preprocessingLabel.grid(column=1, row=0)
+
+savePreButton = Button(root, text = "Save Preprocessing Output", command=save_pre_output)
+savePreButton.grid(column=1, row=2)
 
 preprocessingParameters = Frame();
 seedThresholdL = Label(preprocessingParameters, text = "Seed Threshold")
@@ -198,28 +274,29 @@ seedThreshold = DoubleVar(value = 1.0)
 seedThresholdE = Entry(preprocessingParameters, textvariable = seedThreshold, width=10)
 seedThresholdE.grid(column=1, row=0)
 
-
-
 acceptanceLevelL = Label(preprocessingParameters, text = "Membrane Acceptance Level")
 acceptanceLevelL.grid(column=0, row=1)
 acceptanceLevel = DoubleVar(value = 5.5)
 acceptanceLevelE = Entry(preprocessingParameters, textvariable =acceptanceLevel, width=10)
 acceptanceLevelE.grid(column=1, row=1)
 
-preprocessingParameters.grid(column=1, row=2)
+preprocessingParameters.grid(column=1, row=3)
 
 runPreButton = Button(root, text = "run", command = run_preprocessing)
-runPreButton.grid(column=1, row=3)
+runPreButton.grid(column=1, row=4)
+
+
 
 #Segmentation result part
 
-segmentationImage =Image.fromarray(segmentationArray[0,0,0,:,:])
-segmentationImageTK = ImageTk.PhotoImage(segmentationImage)
-segmentationResultPanel = Label(root, image=segmentationImageTK)
-segmentationResultPanel.grid(column=2, row=0)
+segmentationResultPanel = Label(root)
+segmentationResultPanel.grid(column=2, row=1)
 
 SegmentationLabel = Label(root, text = "Segmentation", width = 60)
-SegmentationLabel.grid(column=2, row=1)
+SegmentationLabel.grid(column=2, row=0)
+
+saveSegmentationButton = Button(root, text = "Save Segmentation Output", command=save_segmentation_output)
+saveSegmentationButton.grid(column=2, row=2)
 
 SegmentationParameters = Frame();
 
@@ -264,15 +341,17 @@ resolutionEy.grid(column=2,row=0)
 resolutionEz.grid(column=3,row=0)
 resolutionFrame.grid(column=1, row=4)
 
-SegmentationParameters.grid(column=2, row=2)
+SegmentationParameters.grid(column=2, row=3)
 
 runSegButton = Button(root, text = "run", command = run_segmentation)
-runSegButton.grid(column=2, row=3)
+runSegButton.grid(column=2, row=4)
 
-textbox=Text(root)
-textbox.grid(column=3, row=0)
+brightness = 1
+inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = update_gui_input(inputFile)
+
+textbox=Text(root, height = 10, width = 120)
+textbox.grid(column=0, row=5, columnspan = 3, padx = 12, pady = 12)
+
 
 root.title("SpheresDT-GUI")
 root.mainloop()
-
-
