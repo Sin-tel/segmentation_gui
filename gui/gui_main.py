@@ -281,10 +281,10 @@ acceptanceLevel = DoubleVar(value = 5.5)
 acceptanceLevelE = Entry(preprocessingParameters, textvariable =acceptanceLevel, width=10)
 acceptanceLevelE.grid(column=1, row=1)
 
-zMembraneDetectorL = Label(preprocessingParameters, text = "z-membrane detector")
-zMembraneDetectorL.grid(column=0, row=2)
-zMembraneDetectorC = Combobox(preprocessingParameters, values=["ON", "OFF"])
-zMembraneDetectorC.grid(column=1, row=2)
+#zMembraneDetectorL = Label(preprocessingParameters, text = "z-membrane detector")
+#zMembraneDetectorL.grid(column=0, row=2)
+#zMembraneDetectorC = Combobox(preprocessingParameters, values=["ON", "OFF"])
+#zMembraneDetectorC.grid(column=1, row=2)
 
 preprocessingParameters.grid(column=1, row=3)
 
