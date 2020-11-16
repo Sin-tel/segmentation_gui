@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import ttk
 from tkinter.filedialog import askdirectory, askopenfilename, asksaveasfilename 
 from PIL import ImageTk, Image, ImageEnhance
 from matplotlib import cm
@@ -151,14 +152,22 @@ def run_preprocessing_blocking():
     os.remove(SCRIPT_FOLDER+"/PARAMSCOPY.xml")
 
 def run_preprocessing():    
+    global zMembraneDetectorBoolean
+
     copyfile(SCRIPT_FOLDER+"/PARAMS.xml", SCRIPT_FOLDER+"/PARAMSCOPY.xml")
+    
     with open(SCRIPT_FOLDER+"/PARAMS.xml","r", encoding = 'utf-8') as prm:
         data = xmltodict.parse(prm.read())
         data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["SEED_THR_DIVIDE_FACTOR"]["@value"] = str(seedThresholdE.get())
         data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["MEMBRANE_ACCEPTANCE_LEVEL"]["@value"] = str(acceptanceLevelE.get())
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "1" 
         data["body"]["MAIN"]["paths"]["img_raw_file"]["@value"] = str(inputFile)  
-        data["body"]["preprocessing"]["flowcontrol"]["l_stack_number"]["@value"] = str(total_stacks_string())   
+        data["body"]["preprocessing"]["flowcontrol"]["l_stack_number"]["@value"] = str(total_stacks_string())
+        if zMembraneDetectorC.get() == "OFF":
+            data["body"]["preprocessing"]["flowcontrol"]["filter_order"]["@value"] = 
+            zMembraneDetectorBoolean = False
+
+
     with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
 
@@ -203,7 +212,8 @@ def run_segmentation():
         data["body"]["spheresDT"]["parms"]["dxyz"]["@value"] = (str(resolutionEx.get())+";"+str(resolutionEy.get())+";"
             +str())
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "2"
-        data["body"]["MAIN"]["paths"]["img_raw_file"]["@value"] = str(inputFile)                 
+        data["body"]["MAIN"]["paths"]["img_raw_file"]["@value"] = str(inputFile)
+
     with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
 
@@ -226,16 +236,16 @@ def on_closing():
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
-def redirector(inputStr):
-    textbox.configure(state='normal')
-    textbox.insert("end", inputStr)
-    textbox.see("end")
-    textbox.configure(state='disabled')
-    stdout_original(inputStr)
+#def redirector(inputStr):
+#    textbox.configure(state='normal')
+#    textbox.insert("end", inputStr)
+#    textbox.see("end")
+#    textbox.configure(state='disabled')
+#    stdout_original(inputStr)
 
-stdout_original = sys.stdout.write
-sys.stdout.write = redirector #whenever sys.stdout.write is called, redirector is called.
-sys.stderr.write = redirector #for some reason joblib uses stderr so we will redirect it too
+#stdout_original = sys.stdout.write
+#sys.stdout.write = redirector #whenever sys.stdout.write is called, redirector is called.
+#sys.stderr.write = redirector #for some reason joblib uses stderr so we will redirect it too
 
 file = io.StringIO()
 
@@ -281,10 +291,12 @@ acceptanceLevel = DoubleVar(value = 5.5)
 acceptanceLevelE = Entry(preprocessingParameters, textvariable =acceptanceLevel, width=10)
 acceptanceLevelE.grid(column=1, row=1)
 
-zMembraneDetectorL = Label(preprocessingParameters, text = "z-membrane detector")
+zMembraneDetectorL = Label(preprocessingParameters, text="z-membrane detector")
 zMembraneDetectorL.grid(column=0, row=2)
-zMembraneDetectorC = Combobox(preprocessingParameters, values=["ON", "OFF"])
+zMembraneDetectorC = ttk.Combobox(preprocessingParameters, values=["ON", "OFF"])
 zMembraneDetectorC.grid(column=1, row=2)
+zMembraneDetectorC.current(1)
+zMembraneDetectorBoolean = False
 
 preprocessingParameters.grid(column=1, row=3)
 
@@ -357,6 +369,5 @@ inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = u
 
 textbox=Text(root, height = 10, width = 120)
 textbox.grid(column=0, row=5, columnspan = 3, padx = 12, pady = 12)
-
 root.title("SpheresDT-GUI")
 root.mainloop()
