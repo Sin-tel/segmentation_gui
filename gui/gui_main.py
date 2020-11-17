@@ -164,9 +164,13 @@ def run_preprocessing():
         data["body"]["MAIN"]["paths"]["img_raw_file"]["@value"] = str(inputFile)  
         data["body"]["preprocessing"]["flowcontrol"]["l_stack_number"]["@value"] = str(total_stacks_string())
         if zMembraneDetectorC.get() == "OFF":
-            data["body"]["preprocessing"]["flowcontrol"]["filter_order"]["@value"] = 
+            data["body"]["preprocessing"]["flowcontrol"]["filter_order"]["@value"] = "0;25;4;37;99;39;38;28;27;99;18;31;98;34;98;35;99"
+            data["body"]["preprocessing"]["flowcontrol"]["l_output_f_names"]["@value"] = "frangi;threshold;membranes;exterior_outline;exterior_mask"
             zMembraneDetectorBoolean = False
-
+        elif zMembraneDetectorC.get() == "ON":
+            data["body"]["preprocessing"]["flowcontrol"]["filter_order"]["@value"] = "0;25;4;37;99;39;38;28;27;99;18;31;98;34;98;35;99;43;98"
+            data["body"]["preprocessing"]["flowcontrol"]["l_output_f_names"]["@value"] = "frangi;threshold;membranes;exterior_outline;exterior_mask;membranes_blend_z"
+            zMembraneDetectorBoolean = True
 
     with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
@@ -213,6 +217,10 @@ def run_segmentation():
             +str())
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "2"
         data["body"]["MAIN"]["paths"]["img_raw_file"]["@value"] = str(inputFile)
+        if zMembraneDetectorBoolean:
+            data["body"]["spheresDT"]["paths"]["FILE_MEMBRANE"]["@value"] = "membranes_blend_z.tif"
+        elif not zMembraneDetectorBoolean:
+            data["body"]["spheresDT"]["paths"]["FILE_MEMBRANE"]["@value"] = "membranes.tif"
 
     with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
