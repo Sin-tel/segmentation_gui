@@ -244,16 +244,16 @@ def on_closing():
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
-#def redirector(inputStr):
-#    textbox.configure(state='normal')
-#    textbox.insert("end", inputStr)
-#    textbox.see("end")
-#    textbox.configure(state='disabled')
-#    stdout_original(inputStr)
+def redirector(inputStr):
+    textbox.configure(state='normal')
+    textbox.insert("end", inputStr)
+    textbox.see("end")
+    textbox.configure(state='disabled')
+    stdout_original(inputStr)
 
-#stdout_original = sys.stdout.write
-#sys.stdout.write = redirector #whenever sys.stdout.write is called, redirector is called.
-#sys.stderr.write = redirector #for some reason joblib uses stderr so we will redirect it too
+stdout_original = sys.stdout.write
+sys.stdout.write = redirector #whenever sys.stdout.write is called, redirector is called.
+sys.stderr.write = redirector #for some reason joblib uses stderr so we will redirect it too
 
 file = io.StringIO()
 
