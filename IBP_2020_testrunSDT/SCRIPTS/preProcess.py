@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 
 from joblib import Parallel, delayed
 
-USE_PARALLEL = True
+USE_PARALLEL = False
 
 def preprocess_image(param_xml, filehandler):
 	def set_filter_parameters(param_xml):
