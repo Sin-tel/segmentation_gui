@@ -12,7 +12,7 @@
 	</RUN>
 	<MAIN>
 		<paths>
-			<img_raw_file value="D:\Documenten\python\segmentation_gui\IBP_2020_testrunSDT/INPUT/TL1_1_t1-5.tif">
+			<img_raw_file value="C:\users\niels\github\segmentation_gui\IBP_2020_testrunSDT/INPUT/TL1_1_t1-5.tif">
 				<description>the filename of the raw 4D image. If this is a directory every file in the directory will be processed</description>
 				<default>C:\Users\wimth\Documents\THESIS\baseimages\MAIN_INPUT_IMAGES\TL2_crop_1ch_emb1of3.tif</default>
 				<dtype>path</dtype>
@@ -69,7 +69,7 @@
 			</output_folder>
 		</paths>
 		<flowcontrol>
-			<filter_order value="default">
+			<filter_order value="0;25;4;37;99;39;38;28;27;99;18;31;98;34;98;35;99">
 				<description>filters used in series.  refer to SDT_modules/PreProcess.py.  uses skikit image filters
 			0:'ORIGINAL',  # loading in the file , 
 			1:'otsu',    # otsu threshold :
@@ -121,7 +121,7 @@
 				<dtype>list;int</dtype>
 				<default>all</default>
 			</l_stack_number>
-			<l_output_f_names value="default">
+			<l_output_f_names value="frangi;threshold;membranes;exterior_outline;exterior_mask">
 				<description>list of filenames used for 'write output'. So, for every 99 or 98 in filter_order, you should provide a name here. Beware that 'membranes' and 'exterior_mask' will be used further on by the spheresDT algorithm, so these names should not be changed !</description>
 				<dtype>list;string</dtype>
 				<default>frangi;threshold;membranes;exterior_outline;exterior_mask;membranes_blend_z</default>

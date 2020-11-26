@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import ttk
 from tkinter.filedialog import askdirectory, askopenfilename, asksaveasfilename 
 from PIL import ImageTk, Image, ImageEnhance
 from matplotlib import cm
@@ -65,10 +66,10 @@ def update_gui_input(inputFile):
     preprocessArray = np.zeros((timeDimension, zDimension, yDimension, xDimension))
     segmentationArray = np.zeros((timeDimension, zDimension, 2, yDimension, xDimension))
 
-    timeSlider = Scale(slidersFrame, from_=0, to=timeDimension-1, length = 400,orient=HORIZONTAL, label="Time-resolution",
+    timeSlider = Scale(slidersFrame, from_=0, to=timeDimension-1, length = 400,orient=HORIZONTAL, label="Time frame",
     command=time_frame)
     timeSlider.grid(column=0, row=0)
-    zDimensionSlider = Scale(slidersFrame, from_=0, to=zDimension-1, length = 400,orient=HORIZONTAL, label="Z-resolution",
+    zDimensionSlider = Scale(slidersFrame, from_=0, to=zDimension-1, length = 400,orient=HORIZONTAL, label="Z frame",
     command=z_frame)
     zDimensionSlider.grid(column=0, row=1)
 
@@ -151,14 +152,26 @@ def run_preprocessing_blocking():
     os.remove(SCRIPT_FOLDER+"/PARAMSCOPY.xml")
 
 def run_preprocessing():    
+    global zMembraneDetectorBoolean
+
     copyfile(SCRIPT_FOLDER+"/PARAMS.xml", SCRIPT_FOLDER+"/PARAMSCOPY.xml")
+    
     with open(SCRIPT_FOLDER+"/PARAMS.xml","r", encoding = 'utf-8') as prm:
         data = xmltodict.parse(prm.read())
         data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["SEED_THR_DIVIDE_FACTOR"]["@value"] = str(seedThresholdE.get())
         data["body"]["preprocessing"]["filter_parms"]["collect_stats"]["MEMBRANE_ACCEPTANCE_LEVEL"]["@value"] = str(acceptanceLevelE.get())
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "1" 
         data["body"]["MAIN"]["paths"]["img_raw_file"]["@value"] = str(inputFile)  
-        data["body"]["preprocessing"]["flowcontrol"]["l_stack_number"]["@value"] = str(total_stacks_string())   
+        data["body"]["preprocessing"]["flowcontrol"]["l_stack_number"]["@value"] = str(total_stacks_string())
+        if zMembraneDetectorC.get() == "OFF":
+            data["body"]["preprocessing"]["flowcontrol"]["filter_order"]["@value"] = "0;25;4;37;99;39;38;28;27;99;18;31;98;34;98;35;99"
+            data["body"]["preprocessing"]["flowcontrol"]["l_output_f_names"]["@value"] = "frangi;threshold;membranes;exterior_outline;exterior_mask"
+            zMembraneDetectorBoolean = False
+        elif zMembraneDetectorC.get() == "ON":
+            data["body"]["preprocessing"]["flowcontrol"]["filter_order"]["@value"] = "0;25;4;37;99;39;38;28;27;99;18;31;98;34;98;35;99;43;98"
+            data["body"]["preprocessing"]["flowcontrol"]["l_output_f_names"]["@value"] = "frangi;threshold;membranes;exterior_outline;exterior_mask;membranes_blend_z"
+            zMembraneDetectorBoolean = True
+
     with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
 
@@ -203,7 +216,12 @@ def run_segmentation():
         data["body"]["spheresDT"]["parms"]["dxyz"]["@value"] = (str(resolutionEx.get())+";"+str(resolutionEy.get())+";"
             +str())
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "2"
-        data["body"]["MAIN"]["paths"]["img_raw_file"]["@value"] = str(inputFile)                 
+        data["body"]["MAIN"]["paths"]["img_raw_file"]["@value"] = str(inputFile)
+        if zMembraneDetectorBoolean:
+            data["body"]["spheresDT"]["paths"]["FILE_MEMBRANE"]["@value"] = "membranes_blend_z.tif"
+        elif not zMembraneDetectorBoolean:
+            data["body"]["spheresDT"]["paths"]["FILE_MEMBRANE"]["@value"] = "membranes.tif"
+
     with open(SCRIPT_FOLDER+"/PARAMS.xml",'w') as prm:
         prm.write(xmltodict.unparse(data,pretty = 'TRUE'))
 
@@ -228,7 +246,8 @@ root.protocol("WM_DELETE_WINDOW", on_closing)
 
 def redirector(inputStr):
     textbox.configure(state='normal')
-    textbox.insert(INSERT, inputStr)
+    textbox.insert("end", inputStr)
+    textbox.see("end")
     textbox.configure(state='disabled')
     stdout_original(inputStr)
 
@@ -279,6 +298,13 @@ acceptanceLevelL.grid(column=0, row=1)
 acceptanceLevel = DoubleVar(value = 5.5)
 acceptanceLevelE = Entry(preprocessingParameters, textvariable =acceptanceLevel, width=10)
 acceptanceLevelE.grid(column=1, row=1)
+
+zMembraneDetectorL = Label(preprocessingParameters, text="z-membrane detector")
+zMembraneDetectorL.grid(column=0, row=2)
+zMembraneDetectorC = ttk.Combobox(preprocessingParameters, values=["ON", "OFF"])
+zMembraneDetectorC.grid(column=1, row=2)
+zMembraneDetectorC.current(1)
+zMembraneDetectorBoolean = False
 
 preprocessingParameters.grid(column=1, row=3)
 
@@ -351,7 +377,5 @@ inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = u
 
 textbox=Text(root, height = 10, width = 120)
 textbox.grid(column=0, row=5, columnspan = 3, padx = 12, pady = 12)
-
-
 root.title("SpheresDT-GUI")
 root.mainloop()
