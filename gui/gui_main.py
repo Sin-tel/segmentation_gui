@@ -13,8 +13,6 @@ from concurrent import futures
 import time
 import sys
 import signal, psutil
-
-
 from contextlib import redirect_stdout
 
 MAIN_FOLDER = os.path.abspath("../IBP_2020_testrunSDT")
@@ -24,9 +22,9 @@ INPUT_DATA_FOLDER = MAIN_FOLDER + "/INPUT"
 OUTPUT_DATA_FOLDER = MAIN_FOLDER + "/OUTPUT"
 PREPROCESSING_FOLDER = OUTPUT_DATA_FOLDER +"/002_preprocessing"
 SPHERES_DT_FOLDER = OUTPUT_DATA_FOLDER +"/003_spheresDT"
-
-
 inputFile = INPUT_DATA_FOLDER+"/TL1_1_t1-5.tif"
+
+
 
 
 sys.path.append(SCRIPT_FOLDER)
@@ -35,6 +33,22 @@ import SDT_MAIN
 root = Tk()
 
 thread_pool_executor = futures.ThreadPoolExecutor(max_workers=1)
+
+w_max =600;  # the max size of the image
+h_max =600;	
+
+def scaling(pil_image): #the image need to scale
+    w, h = pil_image.size #the original size 
+    if w<= w_max and h<= h_max:
+        return pil_image
+    else:
+        f1 = 1.0*w_max/w 
+        f2 = 1.0*w_max/h
+        factor = min([f1, f2])    
+        width = int(w*factor)    
+        height = int(h*factor)    
+        return pil_image.resize((width, height), Image.ANTIALIAS)  
+    return pil_image    
 
 def open_input():
     global inputFile
@@ -97,7 +111,8 @@ def convert(im,b):
     return Image.fromarray(imarray)
 
 def update_img(newim,imagePanel):
-    new = ImageTk.PhotoImage(newim)
+    new = ImageTk.PhotoImage(scaling(newim))
+#    new = ImageTk.PhotoImage(newim)
     imagePanel.configure(image=new)
     imagePanel.image = new
     
