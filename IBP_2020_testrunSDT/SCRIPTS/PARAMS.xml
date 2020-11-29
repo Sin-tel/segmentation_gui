@@ -12,7 +12,7 @@
 	</RUN>
 	<MAIN>
 		<paths>
-			<img_raw_file value="C:\users\niels\github\segmentation_gui\IBP_2020_testrunSDT/INPUT/TL1_1_t1-5.tif">
+			<img_raw_file value="D:/Documenten/python/IBP_images/IBP_images/RJ013_2020-09-07_E1_AiryProcess_t26_31.tif">
 				<description>the filename of the raw 4D image. If this is a directory every file in the directory will be processed</description>
 				<default>C:\Users\wimth\Documents\THESIS\baseimages\MAIN_INPUT_IMAGES\TL2_crop_1ch_emb1of3.tif</default>
 				<dtype>path</dtype>
@@ -116,7 +116,7 @@
 				<default>0;25;4;37;99;39;38;28;27;99;18;31;98;34;98;35;99;43;98</default>
 				<dtype>list;int</dtype>
 			</filter_order>
-			<l_stack_number value="1;2;3;4;5">
+			<l_stack_number value="1;2;3;4;5;6">
 				<description>indicates which stacks of the image need to be processed.  format =&gt; list (eg '1;2;4') or 'all' to process all stacks in the image (=numbers , not indices)</description>
 				<dtype>list;int</dtype>
 				<default>all</default>

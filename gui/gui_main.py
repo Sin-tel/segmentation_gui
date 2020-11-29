@@ -34,8 +34,10 @@ root = Tk()
 
 thread_pool_executor = futures.ThreadPoolExecutor(max_workers=1)
 
-w_max =600;  # the max size of the image
-h_max =600;	
+w_max =500;  # the max size of the image
+h_max =500;	
+
+min_brightness = 0;
 
 def scaling(pil_image): #the image need to scale
     w, h = pil_image.size #the original size 
@@ -47,7 +49,7 @@ def scaling(pil_image): #the image need to scale
         factor = min([f1, f2])    
         width = int(w*factor)    
         height = int(h*factor)    
-        return pil_image.resize((width, height), Image.ANTIALIAS)  
+        return pil_image.resize((width, height), Image.BOX) #change to BILINEAR or BICUBIC for better quality 
     return pil_image    
 
 def open_input():
@@ -72,11 +74,15 @@ def save_segmentation_output():
 
 def update_gui_input(inputFile):
     inputArray = skimage.io.imread(inputFile)
+
+    global min_brightness
+    min_brightness = np.min(inputArray)
+
     timeDimension = inputArray.shape[0]
     zDimension = inputArray.shape[1]
     yDimension = inputArray.shape[2]
     xDimension = inputArray.shape[3]
-    inputImage = Image.fromarray(inputArray[0,0,:,:])
+
     preprocessArray = np.zeros((timeDimension, zDimension, yDimension, xDimension))
     segmentationArray = np.zeros((timeDimension, zDimension, 2, yDimension, xDimension))
 
@@ -107,12 +113,11 @@ def set_label_text(button, text):
 
 def convert(im,b):
     imarray = np.array(im)
-    imarray = np.uint8(cm.magma(np.uint16(imarray*b))*255)
-    return Image.fromarray(imarray)
+    imarray = np.uint8(cm.magma(np.uint16((imarray- min_brightness)*b))*255)
+    return Image.fromarray(imarray) #TODO
 
 def update_img(newim,imagePanel):
     new = ImageTk.PhotoImage(scaling(newim))
-#    new = ImageTk.PhotoImage(newim)
     imagePanel.configure(image=new)
     imagePanel.image = new
     
@@ -269,6 +274,7 @@ def redirector(inputStr):
 stdout_original = sys.stdout.write
 sys.stdout.write = redirector #whenever sys.stdout.write is called, redirector is called.
 sys.stderr.write = redirector #for some reason joblib uses stderr so we will redirect it too
+
 
 file = io.StringIO()
 
