@@ -4,7 +4,9 @@ from tkinter.filedialog import askdirectory, askopenfilename, asksaveasfilename
 from PIL import ImageTk, Image, ImageEnhance
 from matplotlib import cm
 from shutil import copyfile
+import subprocess
 import skimage.io
+import platform
 import numpy as np
 import xmltodict
 import math
@@ -24,9 +26,6 @@ PREPROCESSING_FOLDER = OUTPUT_DATA_FOLDER +"/002_preprocessing"
 SPHERES_DT_FOLDER = OUTPUT_DATA_FOLDER +"/003_spheresDT"
 inputFile = INPUT_DATA_FOLDER+"/TL1_1_t1-5.tif"
 
-
-
-
 sys.path.append(SCRIPT_FOLDER)
 import SDT_MAIN
 
@@ -34,8 +33,8 @@ root = Tk()
 
 thread_pool_executor = futures.ThreadPoolExecutor(max_workers=1)
 
-w_max =500;  # the max size of the image
-h_max =500;	
+w_max = 500;  # the max size of the image
+h_max = 500; 
 
 min_brightness = 0;
 
@@ -45,7 +44,7 @@ def scaling(pil_image): #the image need to scale
         return pil_image
     else:
         f1 = 1.0*w_max/w 
-        f2 = 1.0*w_max/h
+        f2 = 1.0*h_max/h
         factor = min([f1, f2])    
         width = int(w*factor)    
         height = int(h*factor)    
@@ -93,7 +92,7 @@ def update_gui_input(inputFile):
     command=z_frame)
     zDimensionSlider.grid(column=0, row=1)
 
-    update_img(convert(Image.fromarray(inputArray[0,0,:,:]),1),inputImagePanel)
+    update_img(applyLut(Image.fromarray(inputArray[0,0,:,:]),1),inputImagePanel)
     update_img(Image.fromarray(preprocessArray[0,0,:,:]),preprocessingImagePanel)
     update_img(Image.fromarray(segmentationArray[0,0,0,:,:]), segmentationResultPanel)
 
@@ -109,12 +108,12 @@ def total_stacks_string():
     return stringRange
 
 def set_label_text(button, text):
-        button['text'] = text
+    button['text'] = text
 
-def convert(im,b):
+def applyLut(im,b):
     imarray = np.array(im)
     imarray = np.uint8(cm.magma(np.uint16((imarray- min_brightness)*b))*255)
-    return Image.fromarray(imarray) #TODO
+    return Image.fromarray(imarray)
 
 def update_img(newim,imagePanel):
     new = ImageTk.PhotoImage(scaling(newim))
@@ -124,12 +123,12 @@ def update_img(newim,imagePanel):
 def brightness_cb(b):
     global brightness
     brightness = math.exp(float(b))
-    newim = convert(Image.fromarray(inputArray[int(timeSlider.get()), int(zDimensionSlider.get()),:,:]), brightness)
+    newim = applyLut(Image.fromarray(inputArray[int(timeSlider.get()), int(zDimensionSlider.get()),:,:]), brightness)
     update_img(newim,inputImagePanel)
 
 def time_frame(timepoint):
     inputImage = Image.fromarray(inputArray[int(timepoint), int(zDimensionSlider.get()),:,:])
-    inputImage = convert(inputImage, brightness)
+    inputImage = applyLut(inputImage, brightness)
     preprocessingImage = Image.fromarray(preprocessArray[int(timepoint), int(zDimensionSlider.get()),:,:])
     segmentationImage = Image.fromarray(segmentationArray[int(timepoint), int(zDimensionSlider.get()),0,:,:])
     update_img(inputImage, inputImagePanel)    
@@ -138,7 +137,7 @@ def time_frame(timepoint):
 
 def z_frame(depth):
     inputImage = Image.fromarray(inputArray[int(timeSlider.get()), int(depth),:,:])
-    inputImage = convert(inputImage,brightness)
+    inputImage = applyLut(inputImage,brightness)
     preprocessingImage = Image.fromarray(preprocessArray[int(timeSlider.get()), int(depth),:,:])
     segmentationImage = Image.fromarray(segmentationArray[int(timeSlider.get()), int(depth),0,:,:])
     update_img(inputImage, inputImagePanel)    
@@ -247,6 +246,16 @@ def run_segmentation():
 
     thread_pool_executor.submit(run_segmentation_blocking)
 
+def open_external_editor():
+    filepath = SCRIPT_FOLDER+"/PARAMS.xml"
+
+    if platform.system() == 'Darwin':       # macOS
+        subprocess.call(('open', filepath))
+    elif platform.system() == 'Windows':    # Windows
+        os.startfile(filepath)
+    else:                                   # linux variants
+        subprocess.call(('xdg-open', filepath))
+
 def kill_child_processes(parent_pid, sig=signal.SIGTERM):
     try:
         parent = psutil.Process(parent_pid)
@@ -332,8 +341,6 @@ preprocessingParameters.grid(column=1, row=3)
 runPreButton = Button(root, text = "run", command = run_preprocessing)
 runPreButton.grid(column=1, row=4)
 
-
-
 #Segmentation result part
 
 segmentationResultPanel = Label(root)
@@ -392,6 +399,9 @@ SegmentationParameters.grid(column=2, row=3)
 
 runSegButton = Button(root, text = "run", command = run_segmentation)
 runSegButton.grid(column=2, row=4)
+
+openExternalButton = Button(root, text = "edit parameters", command = open_external_editor)
+openExternalButton.grid(column=0, row=4)
 
 brightness = 1
 inputArray, preprocessArray, segmentationArray, zDimensionSlider, timeSlider = update_gui_input(inputFile)
