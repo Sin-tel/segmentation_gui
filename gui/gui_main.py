@@ -74,6 +74,10 @@ def save_segmentation_output():
 def update_gui_input(inputFile):
     inputArray = skimage.io.imread(inputFile)
 
+    #add dummy dimension if single frame
+    if len(inputArray.shape) == 3:
+        inputArray = inputArray[np.newaxis, :]
+
     global min_brightness
     min_brightness = np.min(inputArray)
 
@@ -274,12 +278,12 @@ def on_closing():
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
 def redirector(inputStr):
+    stdout_original(inputStr)
     textbox.configure(state='normal')
     textbox.insert("end", inputStr)
     textbox.see("end")
     textbox.configure(state='disabled')
-    stdout_original(inputStr)
-
+    
 stdout_original = sys.stdout.write
 sys.stdout.write = redirector #whenever sys.stdout.write is called, redirector is called.
 sys.stderr.write = redirector #for some reason joblib uses stderr so we will redirect it too
@@ -380,7 +384,7 @@ minSeedRadiu = DoubleVar(value = 14)
 minSeedRadiusE = Entry(SegmentationParameters,textvariable = minSeedRadiu, width=10)
 minSeedRadiusE.grid(column=1, row=3)
 
-resolutionL = Label(SegmentationParameters, text="Resolution(xyz)")
+resolutionL = Label(SegmentationParameters, text="pixel width xyz (micron)")
 resolutionL.grid(column=0, row=4)
 
 resolutionFrame = Frame(SegmentationParameters)
