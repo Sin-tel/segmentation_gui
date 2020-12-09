@@ -48,6 +48,7 @@ def scaling(pil_image): #the image need to scale
         factor = min([f1, f2])    
         width = int(w*factor)    
         height = int(h*factor)    
+        pil_image = pil_image.convert('RGB')
         return pil_image.resize((width, height), Image.BOX) #change to BILINEAR or BICUBIC for better quality 
     return pil_image    
 
@@ -139,6 +140,7 @@ def time_frame(timepoint):
     update_img(preprocessingImage, preprocessingImagePanel)
     update_img(segmentationImage, segmentationResultPanel)
 
+
 def z_frame(depth):
     inputImage = Image.fromarray(inputArray[int(timeSlider.get()), int(depth),:,:])
     inputImage = applyLut(inputImage,brightness)
@@ -147,7 +149,6 @@ def z_frame(depth):
     update_img(inputImage, inputImagePanel)    
     update_img(preprocessingImage, preprocessingImagePanel)
     update_img(segmentationImage, segmentationResultPanel)
-
 
 # blocking code that is on a seperate thread
 def run_preprocessing_blocking():
