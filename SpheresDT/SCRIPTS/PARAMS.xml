@@ -441,7 +441,7 @@
 				<description>the filename of the exterior mask file.</description>
 				<default>exterior_mask.tif</default>
 			</FILE_EXTERIOR_MASK>
-			<FILE_VALIDATION value="C:/Users/niels/IBP/IBP_images/TL2_crop_1ch_emb1of3.csv">
+			<FILE_VALIDATION value=>
 				<description>the filename of the validation file. Leave blank if you do not want to validate. 
 			The program will also automatically check this location: IMG_RAW_DIR/validation_files/IMG_RAW_FILE[0:-4].csv</description>
 				<dtype>path</dtype>
