@@ -241,6 +241,7 @@ def run_segmentation():
             +str())
         data["body"]["MAIN"]["flowcontrol"]["l_execution_blocks"]["@value"] = "2"
         data["body"]["MAIN"]["paths"]["img_raw_file"]["@value"] = str(inputFile)
+        data["body"]["preprocessing"]["flowcontrol"]["l_stack_number"]["@value"] = str(total_stacks_string())
         if zMembraneDetectorBoolean:
             data["body"]["spheresDT"]["paths"]["FILE_MEMBRANE"]["@value"] = "membranes_blend_z.tif"
         elif not zMembraneDetectorBoolean:
