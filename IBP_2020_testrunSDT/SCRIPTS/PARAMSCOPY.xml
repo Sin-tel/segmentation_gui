@@ -12,7 +12,7 @@
 	</RUN>
 	<MAIN>
 		<paths>
-			<img_raw_file value="C:/Users/niels/IBP/IBP_images/TL2_crop_1ch_emb1of3.tif">
+			<img_raw_file value="D:\Documenten\python\segmentation_gui\IBP_2020_testrunSDT/INPUT/TL1_1_t1-5.tif">
 				<description>the filename of the raw 4D image. If this is a directory every file in the directory will be processed</description>
 				<default>C:\Users\wimth\Documents\THESIS\baseimages\MAIN_INPUT_IMAGES\TL2_crop_1ch_emb1of3.tif</default>
 				<dtype>path</dtype>
@@ -41,7 +41,7 @@
 			</ic_timestamp_subfolder>
 		</paths>
 		<flowcontrol>
-			<l_execution_blocks value="2">
+			<l_execution_blocks value="1">
 				<description>list which indicates which blocks will be executed(1=preprocessing,2=spheresDT,3=Lineager_feeder,4=CTC_TRA).
 			If steps are skipped, the locations of the intermediate files should be filled in accordingly</description>
 				<dtype>list;string</dtype>
@@ -429,7 +429,7 @@
 				<description>the directory of the binary membrane file. Leave blank if you want to use the one outputted by preprocessing</description>
 				<default>E:\Downloads\@tiffhandling\preprocessing\UseAsInput4(TL2)</default>
 			</DIR_MEMBRANE>
-			<FILE_MEMBRANE value="membranes.tif">
+			<FILE_MEMBRANE value="membranes_blend_z.tif">
 				<description>the filename of the binary membrane file.</description>
 				<default>membranes.tif</default>
 			</FILE_MEMBRANE>
