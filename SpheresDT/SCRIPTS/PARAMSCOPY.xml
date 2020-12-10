@@ -12,7 +12,7 @@
 	</RUN>
 	<MAIN>
 		<paths>
-			<img_raw_file value="C:/Users/niels/IBP/IBP_images/TL2_crop_1ch_emb1of3.tif">
+			<img_raw_file value="D:\Documenten\python\segmentation_gui\SpheresDT/INPUT/TL1_1_t1-5.tif">
 				<description>the filename of the raw 4D image. If this is a directory every file in the directory will be processed</description>
 				<default>C:\Users\wimth\Documents\THESIS\baseimages\MAIN_INPUT_IMAGES\TL2_crop_1ch_emb1of3.tif</default>
 				<dtype>path</dtype>
@@ -441,7 +441,7 @@
 				<description>the filename of the exterior mask file.</description>
 				<default>exterior_mask.tif</default>
 			</FILE_EXTERIOR_MASK>
-			<FILE_VALIDATION value="C:/Users/niels/IBP/IBP_images/TL2_crop_1ch_emb1of3.csv">
+			<FILE_VALIDATION value=>
 				<description>the filename of the validation file. Leave blank if you do not want to validate. 
 			The program will also automatically check this location: IMG_RAW_DIR/validation_files/IMG_RAW_FILE[0:-4].csv</description>
 				<dtype>path</dtype>
