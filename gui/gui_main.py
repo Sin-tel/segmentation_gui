@@ -17,7 +17,7 @@ import sys
 import signal, psutil
 from contextlib import redirect_stdout
 
-MAIN_FOLDER = os.path.abspath("../IBP_2020_testrunSDT")
+MAIN_FOLDER = os.path.abspath("../SpheresDT")
 
 SCRIPT_FOLDER = MAIN_FOLDER + "/SCRIPTS"
 INPUT_DATA_FOLDER = MAIN_FOLDER + "/INPUT"

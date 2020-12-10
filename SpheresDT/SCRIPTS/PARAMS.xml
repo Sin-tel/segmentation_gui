@@ -12,7 +12,7 @@
 	</RUN>
 	<MAIN>
 		<paths>
-			<img_raw_file value="../INPUT/TL1_1_t1-5.tif">
+			<img_raw_file value="D:\Documenten\python\segmentation_gui\SpheresDT/INPUT/TL1_1_t1-5.tif">
 				<description>the filename of the raw 4D image. If this is a directory every file in the directory will be processed</description>
 				<default>C:\Users\wimth\Documents\THESIS\baseimages\MAIN_INPUT_IMAGES\TL2_crop_1ch_emb1of3.tif</default>
 				<dtype>path</dtype>
@@ -41,7 +41,7 @@
 			</ic_timestamp_subfolder>
 		</paths>
 		<flowcontrol>
-			<l_execution_blocks value="1">
+			<l_execution_blocks value="2">
 				<description>list which indicates which blocks will be executed(1=preprocessing,2=spheresDT,3=Lineager_feeder,4=CTC_TRA).
 			If steps are skipped, the locations of the intermediate files should be filled in accordingly</description>
 				<dtype>list;string</dtype>
@@ -69,7 +69,7 @@
 			</output_folder>
 		</paths>
 		<flowcontrol>
-			<filter_order value="default">
+			<filter_order value="0;25;4;37;99;39;38;28;27;99;18;31;98;34;98;35;99">
 				<description>filters used in series.  refer to SDT_modules/PreProcess.py.  uses skikit image filters
 			0:'ORIGINAL',  # loading in the file , 
 			1:'otsu',    # otsu threshold :
@@ -121,7 +121,7 @@
 				<dtype>list;int</dtype>
 				<default>all</default>
 			</l_stack_number>
-			<l_output_f_names value="default">
+			<l_output_f_names value="frangi;threshold;membranes;exterior_outline;exterior_mask">
 				<description>list of filenames used for 'write output'. So, for every 99 or 98 in filter_order, you should provide a name here. Beware that 'membranes' and 'exterior_mask' will be used further on by the spheresDT algorithm, so these names should not be changed !</description>
 				<dtype>list;string</dtype>
 				<default>frangi;threshold;membranes;exterior_outline;exterior_mask;membranes_blend_z</default>
@@ -322,19 +322,19 @@
 			</active_contour>
 			<chan_vese>
 				<mu value="default">
-					<description>?edge length? weight parameter. Higher mu values will produce a ?round? edge, while values closer to zero will detect smaller objects.
+					<description>'edge length' weight parameter. Higher mu values will produce a 'round' edge, while values closer to zero will detect smaller objects.
 				Typical values for mu are between 0 and 1, though higher values can be used when dealing with shapes with very ill-defined contours.</description>
 					<dtype>float</dtype>
 					<default>0.25</default>
 				</mu>
 				<lambda1 value="default">
-					<description>#difference from average? weight parameter for the output region with value ?True?. If it is lower than lambda2, this region will have a larger range of values than the other.
-				Typical values for lambda1 and lambda2 are 1. If the ?background? is very different from the segmented object in terms of distribution (for example, a uniform black image with figures of varying intensity), then these values should be different from each other.</description>
+					<description>#difference from average weight parameter for the output region with value `True`. If it is lower than lambda2, this region will have a larger range of values than the other.
+				Typical values for lambda1 and lambda2 are 1. If the 'background' is very different from the segmented object in terms of distribution (for example, a uniform black image with figures of varying intensity), then these values should be different from each other.</description>
 					<dtype>float</dtype>
 					<default>0.0001</default>
 				</lambda1>
 				<lambda2 value="default">
-					<description>difference from average? weight parameter for the output region with value ?False?. If it is lower than lambda1, this region will have a larger range of values than the other.</description>
+					<description>difference from average weight parameter for the output region with value `False`. If it is lower than lambda1, this region will have a larger range of values than the other.</description>
 					<dtype>float</dtype>
 					<default>1.0</default>
 				</lambda2>
@@ -349,7 +349,7 @@
 					<default>1e-3</default>
 				</tol>
 				<init_level_set value="default">
-					<description>Defines the starting level set used by the algorithm. If a string is inputted, a level set that matches the image size will automatically be generated. Alternatively, it is possible to define a custom level set, which should be an array of float values, with the same shape as ?image?.</description>
+					<description>Defines the starting level set used by the algorithm. If a string is inputted, a level set that matches the image size will automatically be generated. Alternatively, it is possible to define a custom level set, which should be an array of float values, with the same shape as 'image'.</description>
 					<dtype>string</dtype>
 					<default>disk</default>
 				</init_level_set>
@@ -361,13 +361,13 @@
 					<default>1</default>
 				</smoothing>
 				<lambda1 value="default">
-					<description>#difference from average? weight parameter for the output region with value ?True?. If it is lower than lambda2, this region will have a larger range of values than the other.
-				Typical values for lambda1 and lambda2 are 1. If the ?background? is very different from the segmented object in terms of distribution (for example, a uniform black image with figures of varying intensity), then these values should be different from each other.</description>
+					<description>#difference from average weight parameter for the output region with value `True`. If it is lower than lambda2, this region will have a larger range of values than the other.
+				Typical values for lambda1 and lambda2 are 1. If the 'background' is very different from the segmented object in terms of distribution (for example, a uniform black image with figures of varying intensity), then these values should be different from each other.</description>
 					<dtype>float</dtype>
 					<default>1</default>
 				</lambda1>
 				<lambda2 value="default">
-					<description>difference from average? weight parameter for the output region with value ?False?. If it is lower than lambda1, this region will have a larger range of values than the other.</description>
+					<description>difference from average weight parameter for the output region with value `False`. If it is lower than lambda1, this region will have a larger range of values than the other.</description>
 					<dtype>float</dtype>
 					<default>1000</default>
 				</lambda2>
@@ -377,7 +377,7 @@
 					<default>100</default>
 				</iterations>
 				<init_level_set value="default">
-					<description>Defines the starting level set used by the algorithm. Accepted values are ?checkerboard? and ?circle?.</description>
+					<description>Defines the starting level set used by the algorithm. Accepted values are 'checkerboard' and 'circle'.</description>
 					<dtype>string</dtype>
 					<default>circle</default>
 				</init_level_set>
@@ -429,7 +429,7 @@
 				<description>the directory of the binary membrane file. Leave blank if you want to use the one outputted by preprocessing</description>
 				<default>E:\Downloads\@tiffhandling\preprocessing\UseAsInput4(TL2)</default>
 			</DIR_MEMBRANE>
-			<FILE_MEMBRANE value="membranes_blend_z.tif">
+			<FILE_MEMBRANE value="membranes.tif">
 				<description>the filename of the binary membrane file.</description>
 				<default>membranes.tif</default>
 			</FILE_MEMBRANE>
@@ -441,7 +441,7 @@
 				<description>the filename of the exterior mask file.</description>
 				<default>exterior_mask.tif</default>
 			</FILE_EXTERIOR_MASK>
-			<FILE_VALIDATION value="../INPUT/TL1_lineage(original)_saved_corr.csv">
+			<FILE_VALIDATION value="C:/Users/niels/IBP/IBP_images/TL2_crop_1ch_emb1of3.csv">
 				<description>the filename of the validation file. Leave blank if you do not want to validate. 
 			The program will also automatically check this location: IMG_RAW_DIR/validation_files/IMG_RAW_FILE[0:-4].csv</description>
 				<dtype>path</dtype>
@@ -483,7 +483,7 @@
 			</reset_seeds>
 		</flowcontrol>
 		<parms>
-			<dxyz value="default">
+			<dxyz value="0.1294751;0.1294751;">
 				<description>pixelwidth dx,dy,dz in micron. check raw image specs</description>
 				<dtype>list;float</dtype>
 				<default>0.1294751;0.1294751;1</default>
@@ -559,12 +559,12 @@
 				<dtype>float</dtype>
 				<default>0.4</default>
 			</FILTER_SPHERE_OVERLAP_MASK_PC>
-			<MIN_SPHERE_RADIUS value="default">
+			<MIN_SPHERE_RADIUS value="10">
 				<description>threshold for sphere creation. The lower, the higher the resolution and computation time</description>
 				<dtype>int</dtype>
 				<default>10</default>
 			</MIN_SPHERE_RADIUS>
-			<MIN_SEED_RADIUS value="default">
+			<MIN_SEED_RADIUS value="14">
 				<description>threshold for cluster creation.  A sphere with a radius smaller than this can not be the seed of a cluster, unless it does not overlap with any other sphere</description>
 				<dtype>int</dtype>
 				<default>14</default>

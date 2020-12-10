@@ -1,5 +1,7 @@
-IBP_2020_testrunSDT/OUTPUT/*
+SpheresDT/OUTPUT/*
 segmentation.sublime-workspace
 segmentation.sublime-project
 **/pycache
 *.pyc
+*.tif
+*.tiff
