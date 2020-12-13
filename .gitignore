@@ -5,3 +5,4 @@ segmentation.sublime-project
 *.pyc
 *.tif
 *.tiff
+!SpheresDT/INPUT/TL1_1_t1-5.tif
