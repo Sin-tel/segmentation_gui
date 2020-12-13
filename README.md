@@ -1,4 +1,4 @@
-# segmentation_gui
+# GUI for C. elegans embryo segmentation
 
 A GUI for SpheresDT, C. elegans segmentation pipeline.
 
