@@ -3,6 +3,7 @@
 A GUI for SpheresDT, C. elegans segmentation pipeline.
 
 To run: `python gui/ui_main.py`
+If you are on windows you can just run GUI.bat
 
 The packages needed are in package_versions.txt. 
 
