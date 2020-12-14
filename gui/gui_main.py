@@ -117,7 +117,7 @@ def set_label_text(button, text):
 
 def applyLut(im,b):
     imarray = np.array(im)
-    imarray = np.uint8(cm.magma(np.uint16((imarray- min_brightness)*b))*255)
+    imarray = np.uint8(cm.magma(np.uint16((imarray - min_brightness)*b))*255)
     return Image.fromarray(imarray)
 
 def update_img(newim,imagePanel):
